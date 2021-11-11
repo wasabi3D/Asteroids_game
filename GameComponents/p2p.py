@@ -50,11 +50,13 @@ class Receive(threading.Thread):
             # print(f"\n[Received] from {addr}, raw: {rx_meesage.decode('utf-8')}")
 
     def kill(self):
-        self.sock.shutdown(socket.SHUT_WR)
+        try:
+            self.sock.shutdown(socket.SHUT_WR)
+        except OSError:
+            pass
         self.stop_ev.set()
         self.do_run = False
-        # self.join()
-        self.sock.close()
+        self.join()
 
 
 class Send(threading.Thread):

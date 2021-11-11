@@ -47,7 +47,6 @@ class Client:
         connecting_txt.blit(self.screen)
         pygame.display.update()
         while self.connection_state == "":
-            print("asdlhulf")
             if self.timed_out:
                 self.stop_client()
                 return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection timed out(join).", Gc.Coordinate(100, 650))
@@ -186,8 +185,9 @@ class Host:
     def ping_connected_players(self):
         while self.do_ping:
             for ip in self.ips:
+                print(ip)
                 tmp_send = Gc.Send(ip, DEFAULT_PORT)
-                tmp_send.send_message(json.dumps(Gc.GameCom(COM_PREP, COM_PING, "", "")))
+                tmp_send.send_message(json.dumps(Gc.GameCom(COM_PREP, COM_PING, "", "").d()))
             time.sleep(4)
 
     def loop(self):
