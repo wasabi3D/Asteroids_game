@@ -8,9 +8,6 @@ import os
 import sys
 import json
 import threading as th
-import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
 import random
 
 
@@ -34,6 +31,7 @@ class Client:
         self.other_players: dict[str, Gc.MpPlayer] = {}
         self.nametags: dict[str, Gc.TextUI] = {}
         self.font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 12)
+        self.font_b = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 20)
 
         self.receive.start()
 
@@ -41,28 +39,21 @@ class Client:
     def loop(self) -> str:
         self.try_join()
 
-        root = tk.Tk()
-        root.geometry("150x150")
-        root.resizable(False, False)
-        root.protocol("WM_DELETE_WINDOW", lambda: None)
-        txt = tk.Label(root, text="Connecting...")
-        txt.pack()
+        connecting_txt = Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connecting...", Gc.Coordinate(100, 600))
+        connecting_txt.blit(self.screen)
+        pygame.display.update()
         while self.connection_state == "":
-            root.update()
+            pass
+        self.screen.fill(BG_COLOR, connecting_txt.rect)
         if self.connection_state == COM_GAME_FULL:
-            messagebox.showerror("GAME FULL", "The game is full. Try again later.")
+            connecting_txt.set_text("Connection error: GAME FULL. ")
             return COM_GAME_FULL
-        elif self.connection_state == COM_CON_SUCCESS:
-            root.destroy()
 
-        root = tk.Tk()
-        root.geometry("250x150")
-        root.resizable(False, False)
-        root.protocol("WM_DELETE_WINDOW", lambda: None)
-        txt = tk.Label(root, text="Waiting for the game to start...")
-        txt.pack()
+        connecting_txt.set_text("Waiting for start...")
+        connecting_txt.blit(self.screen)
+        pygame.display.update()
         while not self.game_started:
-            root.update()
+            pass
         self.running = True
 
         host_send = Gc.Send(self.host_ip, DEFAULT_PORT)
