@@ -7,8 +7,9 @@ from pygame.locals import *
 import os
 import sys
 import json
-import threading as th
 import random
+import time
+import threading
 
 
 def get_turn_and_accel_state(pressed) -> tuple[bool, bool]:
@@ -32,18 +33,24 @@ class Client:
         self.nametags: dict[str, Gc.TextUI] = {}
         self.font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 12)
         self.font_b = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 20)
+        self.last_host_response = time.time()
+        self.timed_out = False
+        self.timeout_detector = threading.Thread(target=self.timeout_detection)
 
         self.receive.start()
+        self.timeout_detector.start()
 
-
-    def loop(self) -> str:
+    def loop(self):
         self.try_join()
 
-        connecting_txt = Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connecting...", Gc.Coordinate(100, 600))
+        connecting_txt = Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connecting...", Gc.Coordinate(100, 650))
         connecting_txt.blit(self.screen)
         pygame.display.update()
         while self.connection_state == "":
-            pass
+            print("asdlhulf")
+            if self.timed_out:
+                self.stop_client()
+                return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection timed out(join).", Gc.Coordinate(100, 650))
         self.screen.fill(BG_COLOR, connecting_txt.rect)
         if self.connection_state == COM_GAME_FULL:
             connecting_txt.set_text("Connection error: GAME FULL. ")
@@ -53,7 +60,10 @@ class Client:
         connecting_txt.blit(self.screen)
         pygame.display.update()
         while not self.game_started:
-            pass
+
+            if self.timed_out:
+                self.stop_client()
+                return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection timed out(lobby).", Gc.Coordinate(100, 700))
         self.running = True
 
         host_send = Gc.Send(self.host_ip, DEFAULT_PORT)
@@ -61,8 +71,13 @@ class Client:
         mynametag = Gc.TextUI(self.font, DEFAULT_TEXT_COL, self.name,
                                    Gc.Coordinate(me.cords.x + NAMETAG_OFFSET[0], me.cords.y + NAMETAG_OFFSET[1]))
         while self.running:
+            if self.timed_out:
+                self.stop_client()
+                return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection timed out(game).", Gc.Coordinate(100, 700))
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.stop_client()
                     sys.exit()
             pressed = pygame.key.get_pressed()
             turn, accel = get_turn_and_accel_state(pressed)
@@ -90,6 +105,7 @@ class Client:
         tmp_send.send_message(json.dumps(tmp_msg.d()))
 
     def on_response(self, msg, addr):
+        self.last_host_response = time.time()
         received = Gc.GameCom("", "", "", "")
         received.__dict__ = json.loads(msg)
         if received.info_type == COM_PREP:
@@ -110,6 +126,17 @@ class Client:
                                                                          p.cords.y + NAMETAG_OFFSET[1])))
                 self.other_players[ip].set_pos((x, y), a)
 
+    def stop_client(self):
+        self.receive.kill()
+
+    def timeout_detection(self):
+        while True:
+            print(time.time() - self.last_host_response)
+            if time.time() - self.last_host_response > TIMEOUT:
+                self.timed_out = True
+                break
+            time.sleep(4)
+
 
 class Host:
     def __init__(self, screen, num_players, name):
@@ -120,6 +147,7 @@ class Host:
         self.players = []
         self.ips = []
         self.running = False
+        self.do_ping = False
         self.players_sprites: dict[str, Gc.MpPlayer] = {}
         self.nametags: dict[str, Gc.TextUI] = {}
         self.send_objects: list[Gc.Send] = []
@@ -128,6 +156,7 @@ class Host:
         self.small_asteroids = Gc.objects.AstGroup()
         self.bullets = Gc.BulletGroup()
         self.font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 12)
+        self.ping_th: threading.Thread = None
 
         self.players_name.append(name)
         self.host_receive.start()
@@ -154,6 +183,13 @@ class Host:
                 if addr[0] in self.players_sprites.keys():
                     self.players_sprites[addr[0]].set_pos((x, y), a)
 
+    def ping_connected_players(self):
+        while self.do_ping:
+            for ip in self.ips:
+                tmp_send = Gc.Send(ip, DEFAULT_PORT)
+                tmp_send.send_message(json.dumps(Gc.GameCom(COM_PREP, COM_PING, "", "")))
+            time.sleep(4)
+
     def loop(self):
         # Wait for players
         font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 15)
@@ -169,6 +205,9 @@ class Host:
                                                                                                     pl_txt_cord.y)))
             pl_txt_cord.update(0, 20, additive=True)
 
+        self.do_ping = True
+        self.ping_th = threading.Thread(target=self.ping_connected_players)
+        self.ping_th.start()
         while len(self.players_name) < self.num_players:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -186,6 +225,7 @@ class Host:
             wait_txt.blit(self.screen)
             ip_txt.blit(self.screen)
             pygame.display.update()
+        self.do_ping = False
 
         self.running = True
         for ip in self.ips:
@@ -222,7 +262,7 @@ class Host:
             s: Gc.Send
             for s in self.send_objects:
                 for ip, sprite in self.players_sprites.items():
-                    if ip == s.address:
+                    if ip == s.address[0]:
                         continue
                     tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
                                          f"{sprite.cords.x}x{sprite.cords.y}x{sprite.angle}x{ip}", sprite.name)

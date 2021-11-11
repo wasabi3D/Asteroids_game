@@ -42,14 +42,18 @@ class Receive(threading.Thread):
 
     def run(self) -> None:
         while self.do_run:
-            rx_meesage, addr = self.sock.recvfrom(self.M_SIZE)
-            self.on_receive(rx_meesage.decode('utf-8'), addr)
+            try:
+                rx_meesage, addr = self.sock.recvfrom(self.M_SIZE)
+                self.on_receive(rx_meesage.decode('utf-8'), addr)
+            except OSError:
+                pass
             # print(f"\n[Received] from {addr}, raw: {rx_meesage.decode('utf-8')}")
 
     def kill(self):
+        self.sock.shutdown(socket.SHUT_WR)
         self.stop_ev.set()
         self.do_run = False
-        self.join()
+        # self.join()
         self.sock.close()
 
 

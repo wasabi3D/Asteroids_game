@@ -63,4 +63,6 @@ HOST = "host"
 
 NAMETAG_OFFSET = (0, 15)
 
+TIMEOUT = 10
+
 

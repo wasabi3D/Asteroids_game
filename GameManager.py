@@ -148,16 +148,22 @@ def run():
                                 additional_ui.clear()
                             elif selected == 2:
                                 join = mpgm.Client(screen, ip_textbox.cont, name_textbox.cont)
-                                join.loop()
+                                ret = join.loop()
+                                if ret is not None:
+                                    additional_ui.append(ret)
                         elif event.key == K_BACKSPACE or event.key == K_DELETE:
                             try:
                                 additional_ui[selected].delete_char()
                             except IndexError:
                                 pass
+                            except AttributeError:
+                                pass
                         else:
                             try:
                                 additional_ui[selected].add_char(event.key)
                             except IndexError:
+                                pass
+                            except AttributeError:
                                 pass
                     elif draw_ui.name == "host":  # HOST MULTIPLAYER GAME
                         selected = draw_ui.selected
