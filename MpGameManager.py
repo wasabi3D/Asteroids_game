@@ -152,7 +152,6 @@ class Client:
         elif received.info_type == COM_GAMEDATINFO:
             info: list[Gc.GameCom] = []
             d: dict
-            print(type(received.msg))
             for d in json.loads(received.msg):
                 g_ = Gc.GameCom("", "", "", "")
                 g_.__dict__ = d

@@ -244,6 +244,11 @@ class Bullet(pygame.sprite.Sprite):
             return True
         return False
 
+    def set_pos(self, xy: tuple):
+        self.cords.update(xy[0], xy[1])
+        self.pCollider.update(self.cords)
+        self.rect = self.image.get_rect(center=self.cords.t)
+
     def blit(self, screen):
         screen.blit(self.image, self.rect)
 
@@ -290,6 +295,15 @@ class Asteroid(pygame.sprite.Sprite):
         rct = rotated.get_rect(center=b4_rct.center)
         self.image = rotated
         self.rect = rct
+
+    def rotate_to(self, angle):
+        self.rotate(angle - self.angle)
+
+    def set_pos(self, xy: tuple, angle: float):
+        self.rotate_to(angle)
+        self.cords.update(xy[0], xy[1])
+        self.pCollider.update(self.cords)
+        self.rect = self.image.get_rect(center=self.cords.t)
 
     def blit(self, screen):
         screen.blit(self.image, self.rect)
