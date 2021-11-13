@@ -42,6 +42,7 @@ class Client:
         self.bullets: dict[int, Gc.Bullet] = {}
         self.t_bullets = 0
         self.dead = False
+        self.spawned = False
 
         self.receive.start()
         self.timeout_detector.start()
@@ -130,6 +131,7 @@ class Client:
             for a in self.asteroids.values():
                 a.blit(self.screen)
             for a in self.small_asteroids.values():
+                print("yes")
                 a.blit(self.screen)
             # ++++++
 
@@ -219,6 +221,7 @@ class Client:
                     if ip in players_remove_flag:
                         players_remove_flag.remove(ip)
                     if ip == self.my_ip:
+                        self.spawned = True
                         continue
                     name = i.other
                     if ip not in self.other_players.keys():
@@ -240,7 +243,7 @@ class Client:
                     if bid in self.bullets.keys():
                         self.bullets.pop(bid)
                 for ip_ in players_remove_flag:
-                    if ip_ == self.my_ip:
+                    if ip_ == self.my_ip and self.spawned:
                         self.dead = True
                         continue
                     if ip_ in self.other_players.keys():
