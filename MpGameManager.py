@@ -165,14 +165,14 @@ class Client:
                     small, image_index = bool(tmp[0]), tmp[1]
                     if not small:
                         if aid in self.asteroids.keys():
-                            self.asteroids[aid].cords.update(x, y)
+                            self.asteroids[aid].set_pos((x, y), angle)
                             self.asteroids[aid].angle = angle
                         else:
                             a = Gc.Asteroid((x, y), angle, small=small, ast_id=aid, img=image_index)
                             self.asteroids.setdefault(aid, a)
                     else:
                         if aid in self.small_asteroids.keys():
-                            self.small_asteroids[aid].cords.update(x, y)
+                            self.small_asteroids[aid].set_pos((x, y), angle)
                             self.small_asteroids[aid].angle = angle
                         else:
                             a = Gc.Asteroid((x, y), angle, small=small, ast_id=id, img=image_index)
@@ -181,7 +181,7 @@ class Client:
                     tmp = i.value.split(DELIMITER)
                     x, y, bid = int(float(tmp[0])), int(float(tmp[1])), int(float(tmp[2]))
                     if bid in self.bullets.keys():
-                        self.bullets[bid].cords.update(x, y)
+                        self.bullets[bid].set_pos((x, y))
                     else:
                         b = Gc.Bullet((x, y), pygame.Vector2(0, 0), bul_id=bid)
                         self.bullets.setdefault(bid, b)
