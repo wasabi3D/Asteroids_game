@@ -199,7 +199,7 @@ def run():
                 ui.blit(screen)
             pygame.display.update()
 
-    # Game loop
+    # SINGLE PLAYER GAME LOOP
     def game():
         running = True
         player = Gc.Player((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), Gc.ml.dat[PLAYER])

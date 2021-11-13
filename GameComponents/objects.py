@@ -27,6 +27,7 @@ class Coordinate:
     """
     Class qui permet de représenter les coordonnées des objets dans le jeu. 
     """
+
     def __init__(self, x: int, y: int, clamp_coordinate=True):
         self.x = x
         self.y = y
@@ -45,7 +46,7 @@ class Coordinate:
         if self.do_clamp:
             self.clamp()
         self.t = (self.x, self.y)
-    
+
     def __add__(self, other):
         if type(other) is Coordinate:
             return Coordinate(self.x + other.x, self.y + other.y, clamp_coordinate=(self.do_clamp or other.do_clamp))
@@ -81,7 +82,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, xy: tuple[int, int], img: Surface) -> None:
         super().__init__()
         self.cords = Coordinate(xy[0], xy[1])
-        self.vector = Vector2(0, -1) 
+        self.vector = Vector2(0, -1)
         self.acc_spd = 0
         self.speed_vector = Vector2(0, 0)
         self.angle = 0
@@ -92,7 +93,7 @@ class Player(pygame.sprite.Sprite):
         self.clone = self.image.copy()
         self.pCollider = Collider(self.cords, round(self.image.get_rect().width / 2))
         self.shoot_vector = Vector2(0, -1)
-    
+
     def update(self, acc: bool, acc_ang: bool, delta=1 / glocals.UPD) -> None:
 
         if not self.vector.is_normalized:
@@ -115,7 +116,7 @@ class Player(pygame.sprite.Sprite):
             self.speed_vector += tmp_vec * self.acc_spd * delta
         else:
             self.acc_spd = 0
-            
+
         cur_spd = self.speed_vector.length_squared()
         if cur_spd > 0.1:
             self.speed_vector += -self.speed_vector * glocals.BREAK_MULTIPLIER
@@ -141,7 +142,7 @@ class Player(pygame.sprite.Sprite):
 
     def blit(self, screen):
         screen.blit(self.image, self.rect)
-    
+
     def set_pos(self, xy: tuple, angle: float):
         self.rotate_to(angle)
         self.cords.update(xy[0], xy[1])
@@ -150,7 +151,7 @@ class Player(pygame.sprite.Sprite):
         self.pCollider.update(self.cords)
         self.acc_ang = 0
         self.rect = self.image.get_rect(center=self.cords.t)
-    
+
     def set_img(self, image_: pygame.Surface):
         old_ang = self.angle
         self.rotate_to(0)
@@ -194,11 +195,11 @@ class BreakParticlesParent(sprite.Group):
         for _ in range(number):
             p = BreakParticle(glocals.PARTICLE_LIFETIME, random.randint(0, 360), pos, glocals.PARTICLE_SPD)
             self.add(p)
-    
+
     def update(self):
         for sp in self.sprites():
             sp.update()
-        
+
         self.timer += 1 / glocals.UPD
 
     def lifetime_reached(self):
@@ -211,7 +212,7 @@ class ParticlesGroup:
 
     def add_particle(self, pt: BreakParticlesParent):
         self.particles.append(pt)
-    
+
     def update(self):
         for i, p in enumerate(self.particles):
             p.update()
@@ -224,32 +225,37 @@ class ParticlesGroup:
 
 
 class Bullet(pygame.sprite.Sprite):
-    
-    def __init__(self, xy: tuple[int, int], vector: Vector2) -> None:
+
+    def __init__(self, xy: tuple[int, int], vector: Vector2, bul_id=0) -> None:
         super().__init__()
         self.cords = Coordinate(xy[0], xy[1], clamp_coordinate=False)
         self.vector = vector * glocals.BULLET_SPEED
         self.image = ml.dat[glocals.BULLET]
         self.rect = self.image.get_rect(center=xy)
         self.pCollider = Collider(self.cords, self.image.get_width())
-    
+        self.id = bul_id
+
     def update(self):
         self.cords = self.cords + self.vector / glocals.UPD
         self.pCollider.update(self.cords)
         self.rect = self.image.get_rect(center=self.cords.t)
-        if self.cords.x > glocals.SCREEN_DIMENSION[0] or self.cords.x < 0 or self.cords.y < 0 or self.cords.y > glocals.SCREEN_DIMENSION[1]:
+        if self.cords.x > glocals.SCREEN_DIMENSION[0] or self.cords.x < 0 or self.cords.y < 0 or self.cords.y > \
+                glocals.SCREEN_DIMENSION[1]:
             return True
         return False
-    
+
     def blit(self, screen):
         screen.blit(self.image, self.rect)
 
 
 class Asteroid(pygame.sprite.Sprite):
-    def __init__(self, xy: tuple[int, int], angle: float=0., small: bool=False) -> None:
+    def __init__(self, xy: tuple[int, int], angle: float = 0., small: bool = False, ast_id=0) -> None:
         super().__init__()
-        if not small: self.image = ml.dat[random.choice(glocals.ASTS)]
-        else: self.image = ml.dat['smallA' + random.choice(glocals.ASTS)[1:]]
+        self.img_index = random.randrange(0, len(glocals.ASTS))
+        if not small:
+            self.image = ml.dat[glocals.ASTS[self.img_index]]
+        else:
+            self.image = ml.dat['smallA' + glocals.ASTS[self.img_index]]
         self.clone = self.image.copy()
         self.rect = self.image.get_rect(center=xy)
         self.cords = Coordinate(xy[0], xy[1])
@@ -259,6 +265,8 @@ class Asteroid(pygame.sprite.Sprite):
         self.vector = Vector2(0, -1)
         self.vector.rotate_ip(angle)
         self.pCollider = Collider(self.cords, round(self.image.get_width() / 2))
+        self.id = ast_id
+        self.small = small
 
     def update(self):
         self.move()
@@ -269,7 +277,7 @@ class Asteroid(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=self.cords.t)
         self.pCollider.update(self.cords)
         self.rotate(self.torque * delta)
-        
+
     def rotate(self, angle):
         b4_rct = self.image.get_rect(center=self.rect.center)
         self.angle += angle
@@ -285,25 +293,25 @@ class Asteroid(pygame.sprite.Sprite):
 class BulletGroup(sprite.Group):
     def __init__(self, *sprites) -> None:
         super().__init__(*sprites)
-    
+
     def update(self) -> None:
         for sp in self.sprites():
             if sp.update():
                 self.remove(sp)
-    
+
 
 class AstGroup(sprite.Group):
 
     def __init__(self, *sprites) -> None:
         super().__init__(*sprites)
-    
+
     def is_colliding_player(self, pl: Player) -> bool:
         sp: Asteroid
         for sp in self.sprites():
             if is_colliding(sp.pCollider, pl.pCollider):
                 return True
         return False
-    
+
     def is_colliding_destroy_bullet(self, other: BulletGroup, particlesList: ParticlesGroup) -> list[Coordinate]:
         destroyed_list_cords = []
         bu: Bullet
@@ -312,7 +320,9 @@ class AstGroup(sprite.Group):
             for sp in self.sprites():
                 if is_colliding(sp.pCollider, bu.pCollider):
                     destroyed_list_cords.append(sp.cords)
-                    particlesList.add_particle(BreakParticlesParent(glocals.PARTICLE_PARENT_LIFETIME, random.randint(glocals.PARTICLE_MIN, glocals.PARTICLE_MAX), sp.cords))
+                    particlesList.add_particle(BreakParticlesParent(glocals.PARTICLE_PARENT_LIFETIME,
+                                                                    random.randint(glocals.PARTICLE_MIN,
+                                                                                   glocals.PARTICLE_MAX), sp.cords))
                     self.remove(sp)
                     other.remove(bu)
         return destroyed_list_cords
