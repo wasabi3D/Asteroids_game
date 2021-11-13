@@ -54,8 +54,11 @@ class Receive(threading.Thread):
             # print(f"\n[Received] from {addr}, raw: {rx_meesage.decode('utf-8')}")
 
     def kill(self):
-        self.sock.shutdown(socket.SHUT_RDWR)
-        self.sock.close()
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+            self.sock.close()
+        except OSError:
+            print("warn: socket os error")
 
         self.stop_ev.set()
         self.do_run = False
