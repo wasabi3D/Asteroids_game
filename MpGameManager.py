@@ -222,8 +222,8 @@ class Host:
         self.screen: pygame.Surface = screen
         self.host_receive = Gc.Receive(DEFAULT_PORT, self._on_rec_from_client)
         self.num_players = num_players
-        self.players_name = []
-        self.players = []
+        self.players_name_lobby = []
+        self.players_name_game = []
         self.ips = []
         self.running = False
         self.do_ping = False
@@ -240,7 +240,7 @@ class Host:
         self.tick = 0
         self.asteroids_count = 0
 
-        self.players_name.append(name)
+        self.players_name_lobby.append(name)
         self.host_receive.start()
 
     def _on_rec_from_client(self, msg_, addr):
@@ -249,9 +249,9 @@ class Host:
         if received.info_type == COM_PREP:
             print("REQUEST!!!!")
             tmp_send = Gc.Send(addr[0], DEFAULT_PORT)
-            if len(self.players) < self.num_players:
-                self.players_name.append(received.value)
-                self.players.append(received.value)
+            if len(self.players_name_game) < self.num_players:
+                self.players_name_lobby.append(received.value)
+                self.players_name_game.append(received.value)
                 self.ips.append(addr[0])
                 tmp_msg = Gc.GameCom(COM_PREP, COM_CON_SUCCESS, "", "")
                 tmp_send.send_message(json.dumps(tmp_msg.d()))
@@ -345,7 +345,7 @@ class Host:
         self.do_ping = True
         self.ping_th = threading.Thread(target=self._ping_connected_players)
         self.ping_th.start()
-        while len(self.players_name) < self.num_players:
+        while len(self.players_name_lobby) < self.num_players:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.kill_host()
@@ -353,9 +353,9 @@ class Host:
 
             self.screen.fill(BG_COLOR)
             for i, txt in enumerate(players_txt):  # update text
-                if i + 1 > len(self.players_name):
+                if i + 1 > len(self.players_name_lobby):
                     break
-                txt.set_text(f"Player {i + 1}: {self.players_name[i]}", pos=txt.pos)
+                txt.set_text(f"Player {i + 1}: {self.players_name_lobby[i]}", pos=txt.pos)
 
             for txt in players_txt:
                 txt.blit(self.screen)
@@ -376,7 +376,7 @@ class Host:
         mynametag = Gc.TextUI(self.font, DEFAULT_TEXT_COL, self.name,
                               Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[0]))
         for i, ip in enumerate(self.ips):
-            self.players_sprites.setdefault(ip, Gc.MpPlayer((0, 0), Gc.ml.dat[PLAYER], self.name[i]))
+            self.players_sprites.setdefault(ip, Gc.MpPlayer((0, 0), Gc.ml.dat[PLAYER], self.players_name_game[i]))
             self.send_objects.append(Gc.Send(ip, DEFAULT_PORT))
             p = self.players_sprites[ip]
             self.nametags.setdefault(ip, Gc.TextUI(self.font, DEFAULT_TEXT_COL, p.name,
