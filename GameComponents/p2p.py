@@ -27,7 +27,7 @@ class PackedUpdateData:
 
 
 class Receive(threading.Thread):
-    def __init__(self, port: int, on_receive_func, m_size=1024):
+    def __init__(self, port: int, on_receive_func, m_size=2048):
         super(Receive, self).__init__()
         self.received_raw = ""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -66,7 +66,7 @@ class Receive(threading.Thread):
 
 
 class Send:
-    def __init__(self, address: str, port: int, m_size=1024):
+    def __init__(self, address: str, port: int, m_size=2048):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.M_SiZE = m_size
         self.message = ""
