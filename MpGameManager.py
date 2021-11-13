@@ -525,6 +525,11 @@ class Host:
                                                                 f"{ast.angle}{DELIMITER}{ast.id}",
                                  f"{False}{DELIMITER}{ast.img_index}")
             common_info.append(tmp_msg.d())
+        for ast in self.small_asteroids.sprites():
+            tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_ASTEROID, f"{ast.cords.x}{DELIMITER}{ast.cords.y}{DELIMITER}"
+                                                                f"{ast.angle}{DELIMITER}{ast.id}",
+                                 f"{True}{DELIMITER}{ast.img_index}")
+            common_info.append(tmp_msg.d())
         # +++
         # +++BULLETS+++
         bul: Gc.Bullet
