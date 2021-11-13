@@ -231,16 +231,20 @@ class Client:
 
                 # Remove unnecessary objects
                 for aid in ast_remove_flag:
-                    self.asteroids.pop(aid)
+                    if aid in self.asteroids.keys():
+                        self.asteroids.pop(aid)
                 for aid in small_ast_remove_flag:
-                    self.small_asteroids.pop(aid)
+                    if aid in self.small_asteroids.keys():
+                        self.small_asteroids.pop(aid)
                 for bid in bullets_remove_flag:
-                    self.bullets.pop(bid)
+                    if bid in self.bullets.keys():
+                        self.bullets.pop(bid)
                 for ip_ in players_remove_flag:
                     if ip_ == self.my_ip:
                         self.dead = True
                         continue
-                    self.other_players.pop(ip_)
+                    if ip_ in self.other_players.keys():
+                        self.other_players.pop(ip_)
 
     def stop_client(self):
         self.receive.kill()
@@ -406,6 +410,7 @@ class Host:
             self.score += round(len(self.small_asteroids.is_colliding_destroy_bullet(self.bullets, None, render_particles=False))
                                 * POINTS_P_AST / 2)
 
+            pop_list: list[str] = []
             pl: Gc.MpPlayer
             for k, pl in self.players_sprites.items():
                 if self.asteroids.is_colliding_player(pl) or self.small_asteroids.is_colliding_player(pl):
@@ -413,9 +418,12 @@ class Host:
                     #     gui_sh.remove(-1)
                     pl.health -= 1
                     if pl.health <= 0:
-                        self.players_sprites.pop(k)
+                        pop_list.append(k)
+                        # self.players_sprites.pop(k)
                         continue
                     pl.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), 0)
+            for p in pop_list:
+                self.players_sprites.pop(p)
 
             if not self.dead:
                 if self.asteroids.is_colliding_player(self.me) or self.small_asteroids.is_colliding_player(self.me):
