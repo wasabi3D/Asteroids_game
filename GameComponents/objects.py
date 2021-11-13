@@ -136,6 +136,7 @@ class Player(pygame.sprite.Sprite):
         self.image = rotated
         self.rect = rct
         self.shoot_vector.rotate_ip(angle)
+        print(self.shoot_vector.x, self.shoot_vector.y)
 
     def rotate_to(self, angle):
         self.rotate(angle - self.angle)

@@ -280,7 +280,7 @@ class Host:
                     self.players_sprites[addr[0]].set_pos((x, y), a)
             elif received.msg == COM_SHOOT:
                 sp = received.value.split(DELIMITER)
-                x, y, dx, dy = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), int(float(sp[3]))
+                x, y, dx, dy = int(float(sp[0])), int(float(sp[1])), float(sp[2]), float(sp[3])
                 print(dx, dy)
                 b = Gc.Bullet((x, y), pygame.Vector2(dx, dy) * BULLET_SPEED, bul_id=self.bullets_count)
                 self.bullets_count += 1
