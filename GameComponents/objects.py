@@ -162,9 +162,10 @@ class Player(pygame.sprite.Sprite):
 
 
 class MpPlayer(Player):
-    def __init__(self, xy: tuple[int, int], img: Surface, name: str):
+    def __init__(self, xy: tuple[int, int], img: Surface, name: str, health: int):
         super().__init__(xy, img)
         self.name = name
+        self.health = health
 
 
 class BreakParticle(pygame.sprite.Sprite):
@@ -332,7 +333,8 @@ class AstGroup(sprite.Group):
                 return True
         return False
 
-    def is_colliding_destroy_bullet(self, other: BulletGroup, particlesList: ParticlesGroup) -> list[Coordinate]:
+    def is_colliding_destroy_bullet(self, other: BulletGroup, particlesList: ParticlesGroup,
+                                    render_particles=True) -> list[Coordinate]:
         destroyed_list_cords = []
         bu: Bullet
         for bu in other.sprites():
@@ -340,9 +342,10 @@ class AstGroup(sprite.Group):
             for sp in self.sprites():
                 if is_colliding(sp.pCollider, bu.pCollider):
                     destroyed_list_cords.append(sp.cords)
-                    particlesList.add_particle(BreakParticlesParent(glocals.PARTICLE_PARENT_LIFETIME,
-                                                                    random.randint(glocals.PARTICLE_MIN,
-                                                                                   glocals.PARTICLE_MAX), sp.cords))
+                    if render_particles:
+                        particlesList.add_particle(BreakParticlesParent(glocals.PARTICLE_PARENT_LIFETIME,
+                                                                        random.randint(glocals.PARTICLE_MIN,
+                                                                                       glocals.PARTICLE_MAX), sp.cords))
                     self.remove(sp)
                     other.remove(bu)
         return destroyed_list_cords

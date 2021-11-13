@@ -44,6 +44,8 @@ PARTICLE_MAX = 16
 
 DEFAULT_PORT = 6385
 
+HP = 3
+
 LINE = "line"
 
 COM_GAMEDATINFO = "cgamedinfo"
