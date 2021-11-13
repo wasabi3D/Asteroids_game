@@ -39,6 +39,7 @@ class Client:
         self.asteroids: dict[int, Gc.Asteroid] = {}
         self.small_asteroids: dict[int, Gc.Asteroid] = {}
         self.bullets: dict[int, Gc.Bullet] = {}
+        self.t_bullets = 0
 
         self.receive.start()
         self.timeout_detector.start()
@@ -96,6 +97,15 @@ class Client:
             # ++++++
             self.screen.fill(BG_COLOR)
 
+            # +++SHOOT+++
+            if pressed[K_SPACE] and self.t_bullets <= 0:  # Generate bullets
+                tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_SHOOT, f"{me.cords.x}{DELIMITER}{me.cords.y}{DELIMITER}"
+                                                                 f"{me.shoot_vector.x}{DELIMITER}{me.shoot_vector.y}",
+                                     "")
+                host_send.send_message(json.dumps(tmp_msg.d()))
+                self.t_bullets = round(UPD / 3)
+            # ++++++
+
             # +++SEND CLIENT's POS DATA TO HOST+++
             tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
                                  f"{me.cords.x}{DELIMITER}{me.cords.y}{DELIMITER}"
@@ -131,6 +141,7 @@ class Client:
             me.blit(self.screen)
             mynametag.set_pos(Gc.Coordinate(me.cords.x + NAMETAG_OFFSET[0], me.cords.y + NAMETAG_OFFSET[1]))
             mynametag.blit(self.screen)
+            self.t_bullets -= 1
             pygame.display.update()
             pygame.time.Clock().tick(UPD)
             # ++++++
@@ -195,7 +206,7 @@ class Client:
                         p = self.other_players[ip]
                         self.nametags.setdefault(ip, Gc.TextUI(self.font, DEFAULT_TEXT_COL, p.name,
                                                                Gc.Coordinate(p.cords.x + NAMETAG_OFFSET[0],
-                                                                            p.cords.y + NAMETAG_OFFSET[1])))
+                                                                             p.cords.y + NAMETAG_OFFSET[1])))
                     self.other_players[ip].set_pos((x, y), a)
 
     def stop_client(self):
@@ -237,8 +248,11 @@ class Host:
         self.font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 12)
         self.ping_th: threading.Thread = None
         self.me: Gc.MpPlayer = None
+        self.t_bullets = 0
         self.tick = 0
         self.asteroids_count = 0
+        self.small_asteroids_count = 0
+        self.bullets_count = 0
 
         self.players_name_lobby.append(name)
         self.host_receive.start()
@@ -264,6 +278,12 @@ class Host:
                 x, y, a, ip = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), sp[3]
                 if addr[0] in self.players_sprites.keys():
                     self.players_sprites[addr[0]].set_pos((x, y), a)
+            elif received.msg == COM_SHOOT:
+                sp = received.value.split(DELIMITER)
+                x, y, dx, dy = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), int(float(sp[3]))
+                b = Gc.Bullet((x, y), pygame.Vector2(dx, dy) * BULLET_SPEED, bul_id=self.bullets_count)
+                self.bullets_count += 1
+                self.bullets.add(b)
 
     def _ping_connected_players(self):
         while self.do_ping:
@@ -396,6 +416,14 @@ class Host:
             turn, accel = get_turn_and_accel_state(pressed)
             # ++++++
 
+            # +++SHOOT+++
+            if pressed[K_SPACE] and self.t_bullets <= 0:  # Generate bullets
+                self.bullets.add(Gc.Bullet(self.me.cords.t, self.me.shoot_vector * BULLET_SPEED,
+                                           bul_id=self.bullets_count))
+                self.bullets_count += 1
+                self.t_bullets = round(UPD / 3)
+            # ++++++
+
             # +++ASTEROIDS GENERATION+++
             if self.tick % (UPD * AST_FREQUECY) == 0:  # Generate asteroids
                 if random.randint(0, 1) == 1:
@@ -428,10 +456,10 @@ class Host:
 
             threading.Thread(target=self._send_objects_data2client).start()
             self.tick += 1
+            self.t_bullets -= 1
             self.bullets.update()
             self.asteroids.update()
             self.small_asteroids.update()
             pygame.display.update()
             pygame.time.Clock().tick(UPD)
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<
-

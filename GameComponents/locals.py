@@ -58,8 +58,9 @@ COM_BULLET = "cbullet"
 COM_PLAYER_POS = "cplayerpos"
 COM_GAME_START = "cstart"
 COM_PING = "cping"
-
-HOST = "host"
+COM_SHOOT = "cshoot"
+COM_DEST_BULLET = "cdbullet"
+COM_DEST_AST = "cdast"
 
 NAMETAG_OFFSET = (0, 15)
 
