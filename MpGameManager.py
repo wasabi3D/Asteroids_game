@@ -2,6 +2,7 @@ import GameComponents as Gc
 from GameComponents.locals import *
 import pygame
 from pygame.locals import *
+from distutils.util import strtobool
 import os
 import sys
 import json
@@ -162,7 +163,7 @@ class Client:
                     tmp = i.value.split(DELIMITER)
                     x, y, angle, aid = int(float(tmp[0])), int(float(tmp[1])), int(float(tmp[2])), int(float(tmp[3]))
                     tmp = i.other.split(DELIMITER)
-                    small, image_index = bool(tmp[0]), tmp[1]
+                    small, image_index = bool(strtobool(tmp[0])), tmp[1]
                     if not small:
                         if aid in self.asteroids.keys():
                             self.asteroids[aid].set_pos((x, y), angle)
