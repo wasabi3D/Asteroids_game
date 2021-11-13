@@ -222,6 +222,7 @@ class Client:
                         players_remove_flag.remove(ip)
                     if ip == self.my_ip:
                         self.spawned = True
+                        players_remove_flag.remove(ip)
                         continue
                     name = i.other
                     if ip not in self.other_players.keys():
@@ -538,17 +539,17 @@ class Host:
                                                               f"{DELIMITER}{bul.id}", "")
             common_info.append(tmp_msg.d())
         # +++
+        # +++OTHER PLAYER's INFORMATION+++
+        for ip, sprite in self.players_sprites.items():
+            tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
+                                 f"{sprite.cords.x}{DELIMITER}{sprite.cords.y}{DELIMITER}"
+                                 f"{sprite.angle}{DELIMITER}{ip}", sprite.name)
+            common_info.append(tmp_msg.d())
+        # +++
 
         for s_ in self.send_objects:
             s = s_.copy()
-            msgs: list[dict] = common_info.copy()
-            # +++OTHER PLAYER's INFORMATION+++
-            for ip, sprite in self.players_sprites.items():
-                tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
-                                     f"{sprite.cords.x}{DELIMITER}{sprite.cords.y}{DELIMITER}"
-                                     f"{sprite.angle}{DELIMITER}{ip}", sprite.name)
-                msgs.append(tmp_msg.d())
-            # +++
-            final = Gc.GameCom(COM_GAMEDATINFO, json.dumps(msgs), "", "")
+
+            final = Gc.GameCom(COM_GAMEDATINFO, json.dumps(common_info), "", "")
             s.set_message(json.dumps(final.d()))
             s.run()
