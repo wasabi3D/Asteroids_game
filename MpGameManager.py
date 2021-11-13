@@ -192,7 +192,8 @@ class Client:
                         else:
                             a = Gc.Asteroid((x, y), angle, small=False, ast_id=aid, img=image_index)
                             self.asteroids.setdefault(aid, a)
-                        ast_remove_flag.remove(aid)
+                        if aid in ast_remove_flag:
+                            ast_remove_flag.remove(aid)
                     else:
                         if aid in self.small_asteroids.keys():
                             self.small_asteroids[aid].set_pos((x, y), angle)
@@ -200,7 +201,8 @@ class Client:
                         else:
                             a = Gc.Asteroid((x, y), angle, small=True, ast_id=id, img=image_index)
                             self.small_asteroids.setdefault(aid, a)
-                        small_ast_remove_flag.remove(aid)
+                        if aid in small_ast_remove_flag:
+                            small_ast_remove_flag.remove(aid)
                 elif i.msg == COM_BULLET:
                     tmp = i.value.split(DELIMITER)
                     x, y, bid = int(float(tmp[0])), int(float(tmp[1])), int(float(tmp[2]))
@@ -209,11 +211,12 @@ class Client:
                     else:
                         b = Gc.Bullet((x, y), pygame.Vector2(0, 0), bul_id=bid)
                         self.bullets.setdefault(bid, b)
-                    bullets_remove_flag.remove(bid)
+                    if bid in bullets_remove_flag:
+                        bullets_remove_flag.remove(bid)
                 elif i.msg == COM_PLAYER_POS:
                     sp = i.value.split(DELIMITER)
                     x, y, a, ip = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), sp[3]
-                    if ip in self.other_players.keys():
+                    if ip in players_remove_flag:
                         players_remove_flag.remove(ip)
                     if ip == self.my_ip:
                         continue
@@ -471,7 +474,6 @@ class Host:
             elif received.msg == COM_SHOOT:
                 sp = received.value.split(DELIMITER)
                 x, y, dx, dy = int(float(sp[0])), int(float(sp[1])), float(sp[2]), float(sp[3])
-                print(dx, dy)
                 b = Gc.Bullet((x, y), pygame.Vector2(dx, dy) * BULLET_SPEED, bul_id=self.bullets_count)
                 self.bullets_count += 1
                 self.bullets.add(b)
