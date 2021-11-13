@@ -43,30 +43,31 @@ class Receive(threading.Thread):
     def run(self) -> None:
         while self.do_run:
             try:
-                rx_meesage, addr = self.sock.recvfrom(self.M_SIZE)
+                g = self.sock.recvfrom(self.M_SIZE)
+                if g is None:
+                    break
+                rx_meesage, addr = g
                 self.on_receive(rx_meesage.decode('utf-8'), addr)
+
             except OSError:
-                pass
+                print("warn: socket os error")
             # print(f"\n[Received] from {addr}, raw: {rx_meesage.decode('utf-8')}")
 
     def kill(self):
-        try:
-            self.sock.shutdown(socket.SHUT_WR)
-        except OSError:
-            pass
+        self.sock.shutdown(socket.SHUT_RDWR)
+        self.sock.close()
+
         self.stop_ev.set()
         self.do_run = False
         self.join()
 
 
-class Send(threading.Thread):
+class Send:
     def __init__(self, address: str, port: int, m_size=1024):
-        super(Send, self).__init__()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.M_SiZE = m_size
         self.message = ""
         self.address = (address, port)
-        self.setName("Send_Th")
 
     def run(self) -> None:
         self.sock.sendto(self.message.encode('utf-8'), self.address)

@@ -1,5 +1,3 @@
-from collections import Sequence
-
 import GameComponents as Gc
 from GameComponents.locals import *
 import pygame
@@ -25,7 +23,7 @@ class Client:
         self.screen: pygame.Surface = screen
         self.host_ip = host_ip
         self.name = name
-        self.receive = Gc.Receive(DEFAULT_PORT, self.on_response)
+        self.receive = Gc.Receive(DEFAULT_PORT, self._on_response)
         self.connection_state = ""
         self.game_started = False
         self.running = False
@@ -35,13 +33,14 @@ class Client:
         self.font_b = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 20)
         self.last_host_response = time.time()
         self.timed_out = False
-        self.timeout_detector = threading.Thread(target=self.timeout_detection)
+        self.timeout_detector = threading.Thread(target=self._timeout_detection)
+        self.detect_timeout = True
 
         self.receive.start()
         self.timeout_detector.start()
 
     def loop(self):
-        self.try_join()
+        self._try_join()
 
         connecting_txt = Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connecting...", Gc.Coordinate(100, 650))
         connecting_txt.blit(self.screen)
@@ -98,12 +97,12 @@ class Client:
             pygame.display.update()
             pygame.time.Clock().tick(UPD)
 
-    def try_join(self):
+    def _try_join(self):
         tmp_send = Gc.Send(self.host_ip, DEFAULT_PORT)
         tmp_msg = Gc.GameCom(COM_PREP, COM_REQUEST_JOIN, self.name, "")
         tmp_send.send_message(json.dumps(tmp_msg.d()))
 
-    def on_response(self, msg, addr):
+    def _on_response(self, msg, addr):
         self.last_host_response = time.time()
         received = Gc.GameCom("", "", "", "")
         received.__dict__ = json.loads(msg)
@@ -127,20 +126,22 @@ class Client:
 
     def stop_client(self):
         self.receive.kill()
+        self.detect_timeout = False
+        self.timeout_detector.join()
 
-    def timeout_detection(self):
-        while True:
+    def _timeout_detection(self):
+        while self.detect_timeout:
             print(time.time() - self.last_host_response)
             if time.time() - self.last_host_response > TIMEOUT:
                 self.timed_out = True
                 break
-            time.sleep(4)
+            time.sleep(TIMEOUT_CHECK_RATE)
 
 
 class Host:
     def __init__(self, screen, num_players, name):
         self.screen: pygame.Surface = screen
-        self.host_receive = Gc.Receive(DEFAULT_PORT, self.on_rec_from_client)
+        self.host_receive = Gc.Receive(DEFAULT_PORT, self._on_rec_from_client)
         self.num_players = num_players
         self.players_name = []
         self.players = []
@@ -160,7 +161,7 @@ class Host:
         self.players_name.append(name)
         self.host_receive.start()
 
-    def on_rec_from_client(self, msg_, addr):
+    def _on_rec_from_client(self, msg_, addr):
         received = Gc.GameCom("", "", "", "")
         received.__dict__ = json.loads(msg_)
         if received.info_type == COM_PREP:
@@ -182,13 +183,18 @@ class Host:
                 if addr[0] in self.players_sprites.keys():
                     self.players_sprites[addr[0]].set_pos((x, y), a)
 
-    def ping_connected_players(self):
+    def _ping_connected_players(self):
         while self.do_ping:
             for ip in self.ips:
                 print(ip)
                 tmp_send = Gc.Send(ip, DEFAULT_PORT)
                 tmp_send.send_message(json.dumps(Gc.GameCom(COM_PREP, COM_PING, "", "").d()))
             time.sleep(4)
+
+    def kill_host(self):
+        self.do_ping = False
+        self.ping_th.join()
+        self.host_receive.kill()
 
     def loop(self):
         # Wait for players
@@ -206,11 +212,12 @@ class Host:
             pl_txt_cord.update(0, 20, additive=True)
 
         self.do_ping = True
-        self.ping_th = threading.Thread(target=self.ping_connected_players)
+        self.ping_th = threading.Thread(target=self._ping_connected_players)
         self.ping_th.start()
         while len(self.players_name) < self.num_players:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.kill_host()
                     sys.exit()
 
             self.screen.fill(BG_COLOR)
@@ -247,6 +254,7 @@ class Host:
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.kill_host()
                     sys.exit()
             self.screen.fill(BG_COLOR)
             pressed = pygame.key.get_pressed()
