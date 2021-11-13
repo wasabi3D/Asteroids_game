@@ -168,14 +168,14 @@ class Client:
                             self.asteroids[aid].set_pos((x, y), angle)
                             self.asteroids[aid].angle = angle
                         else:
-                            a = Gc.Asteroid((x, y), angle, small=small, ast_id=aid, img=image_index)
+                            a = Gc.Asteroid((x, y), angle, small=False, ast_id=aid, img=image_index)
                             self.asteroids.setdefault(aid, a)
                     else:
                         if aid in self.small_asteroids.keys():
                             self.small_asteroids[aid].set_pos((x, y), angle)
                             self.small_asteroids[aid].angle = angle
                         else:
-                            a = Gc.Asteroid((x, y), angle, small=small, ast_id=id, img=image_index)
+                            a = Gc.Asteroid((x, y), angle, small=True, ast_id=id, img=image_index)
                             self.small_asteroids.setdefault(aid, a)
                 elif i.msg == COM_BULLET:
                     tmp = i.value.split(DELIMITER)
@@ -296,7 +296,7 @@ class Host:
         for ast in self.asteroids.sprites():
             tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_ASTEROID, f"{ast.cords.x}{DELIMITER}{ast.cords.y}{DELIMITER}"
                                                                 f"{ast.angle}{DELIMITER}{ast.id}",
-                                 f"{ast.small}{DELIMITER}{ast.img_index}")
+                                 f"{False}{DELIMITER}{ast.img_index}")
             common_info.append(tmp_msg.d())
         # +++
         # +++BULLETS+++
