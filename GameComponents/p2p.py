@@ -81,7 +81,6 @@ class Send:
     def send_message(self, msg: str):
         self.set_message(msg)
         self.run()
-        self.sock.close()
 
     def copy(self):
         s = Send(self.address[0], self.address[1])
