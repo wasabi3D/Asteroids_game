@@ -249,13 +249,18 @@ class Bullet(pygame.sprite.Sprite):
 
 
 class Asteroid(pygame.sprite.Sprite):
-    def __init__(self, xy: tuple[int, int], angle: float = 0., small: bool = False, ast_id=0) -> None:
+    def __init__(self, xy: tuple[int, int], angle: float = 0., small: bool = False, ast_id=0, img="") -> None:
         super().__init__()
-        self.img_index = random.randrange(0, len(glocals.ASTS))
+        if img == "":
+            self.img_index = random.randrange(0, len(glocals.ASTS))
+        else:
+            self.img_index = img
+
         if not small:
             self.image = ml.dat[glocals.ASTS[self.img_index]]
         else:
             self.image = ml.dat['smallA' + glocals.ASTS[self.img_index]]
+
         self.clone = self.image.copy()
         self.rect = self.image.get_rect(center=xy)
         self.cords = Coordinate(xy[0], xy[1])
