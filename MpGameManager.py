@@ -43,6 +43,7 @@ class Client:
         self.t_bullets = 0
         self.dead = False
         self.spawned = False
+        self.me: Gc.MpPlayer = None
 
         self.receive.start()
         self.timeout_detector.start()
@@ -78,9 +79,9 @@ class Client:
 
         # >>>>> INITIALIZE >>>>>
         host_send = Gc.Send(self.host_ip, DEFAULT_PORT)
-        me = Gc.MpPlayer((random.randint(0, 600), random.randint(0, 600)), Gc.ml.dat[PLAYER], self.name, HP)
+        self.me = Gc.MpPlayer((random.randint(0, 600), random.randint(0, 600)), Gc.ml.dat[PLAYER], self.name, HP)
         mynametag = Gc.TextUI(self.font, DEFAULT_TEXT_COL, self.name,
-                              Gc.Coordinate(me.cords.x + NAMETAG_OFFSET[0], me.cords.y + NAMETAG_OFFSET[1]))
+                              Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[1]))
         # <<<<<<<<
 
         # >>>>> MAIN LOOP >>>>>
@@ -103,8 +104,8 @@ class Client:
             # +++SHOOT+++
             if not self.dead:
                 if pressed[K_SPACE] and self.t_bullets <= 0:  # Generate bullets
-                    tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_SHOOT, f"{me.cords.x}{DELIMITER}{me.cords.y}{DELIMITER}"
-                                                                     f"{me.shoot_vector.x}{DELIMITER}{me.shoot_vector.y}",
+                    tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_SHOOT, f"{self.me.cords.x}{DELIMITER}{self.me.cords.y}{DELIMITER}"
+                                                                     f"{self.me.shoot_vector.x}{DELIMITER}{self.me.shoot_vector.y}",
                                          "")
                     host_send.send_message(json.dumps(tmp_msg.d()))
                     self.t_bullets = round(UPD / 3)
@@ -113,8 +114,8 @@ class Client:
             # +++SEND CLIENT's POS DATA TO HOST+++
             if not self.dead:
                 tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
-                                     f"{me.cords.x}{DELIMITER}{me.cords.y}{DELIMITER}"
-                                     f"{me.angle}{DELIMITER}{Gc.get_local_ip()}", self.name)
+                                     f"{self.me.cords.x}{DELIMITER}{self.me.cords.y}{DELIMITER}"
+                                     f"{self.me.angle}{DELIMITER}{Gc.get_local_ip()}", self.name)
                 host_send.send_message(json.dumps(tmp_msg.d()))
             # ++++++
 
@@ -128,9 +129,9 @@ class Client:
 
             # +++DRAW ASTEROIDS+++
             a: Gc.Asteroid
-            for a in self.asteroids.values():
+            for a in list(self.asteroids.values()).copy():
                 a.blit(self.screen)
-            for a in self.small_asteroids.values():
+            for a in list(self.small_asteroids.values()).copy():
                 print("yes")
                 a.blit(self.screen)
             # ++++++
@@ -144,9 +145,9 @@ class Client:
             # +++UPDATES+++
             if not self.dead:
                 turn, accel = get_turn_and_accel_state(pressed)
-                me.update(accel, turn)
-                me.blit(self.screen)
-                mynametag.set_pos(Gc.Coordinate(me.cords.x + NAMETAG_OFFSET[0], me.cords.y + NAMETAG_OFFSET[1]))
+                self.me.update(accel, turn)
+                self.me.blit(self.screen)
+                mynametag.set_pos(Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[1]))
                 mynametag.blit(self.screen)
             self.t_bullets -= 1
             pygame.display.update()
@@ -219,10 +220,13 @@ class Client:
                     sp = i.value.split(DELIMITER)
                     x, y, a, ip = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), sp[3]
                     if ip in players_remove_flag:
+                        print(ip)
                         players_remove_flag.remove(ip)
                     if ip == self.my_ip:
                         self.spawned = True
-                        players_remove_flag.remove(ip)
+                        self.dead = False
+                        if x == int(SCREEN_DIMENSION[0] / 2) and y == int(SCREEN_DIMENSION[1] / 2):
+                            self.me.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), self.me.angle)
                         continue
                     name = i.other
                     if ip not in self.other_players.keys():
@@ -233,23 +237,22 @@ class Client:
                                                                              p.cords.y + NAMETAG_OFFSET[1])))
                     self.other_players[ip].set_pos((x, y), a)
 
-                # Remove unnecessary objects
-                for aid in ast_remove_flag:
-                    if aid in self.asteroids.keys():
-                        self.asteroids.pop(aid)
-                for aid in small_ast_remove_flag:
-                    if aid in self.small_asteroids.keys():
-                        self.small_asteroids.pop(aid)
-                for bid in bullets_remove_flag:
-                    if bid in self.bullets.keys():
-                        self.bullets.pop(bid)
-                for ip_ in players_remove_flag:
-                    if ip_ == self.my_ip and self.spawned:
-                        # self.dead = True
-                        print("Dead")
-                        continue
-                    if ip_ in self.other_players.keys():
-                        self.other_players.pop(ip_)
+            # Remove unnecessary objects
+            for aid in ast_remove_flag:
+                if aid in self.asteroids.keys():
+                    self.asteroids.pop(aid)
+            for aid in small_ast_remove_flag:
+                if aid in self.small_asteroids.keys():
+                    self.small_asteroids.pop(aid)
+            for bid in bullets_remove_flag:
+                if bid in self.bullets.keys():
+                    self.bullets.pop(bid)
+            for ip_ in players_remove_flag:
+                if ip_ == self.my_ip and self.spawned:
+                    self.dead = True
+                    print("Dead")
+                if ip_ in self.other_players.keys():
+                    self.other_players.pop(ip_)
 
     def stop_client(self):
         self.receive.kill()
@@ -426,7 +429,7 @@ class Host:
                         pop_list.append(k)
                         # self.players_sprites.pop(k)
                         continue
-                    pl.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), 0)
+                    pl.set_pos((int(SCREEN_DIMENSION[0] / 2), int(SCREEN_DIMENSION[1] / 2)), 0)
             for p in pop_list:
                 self.players_sprites.pop(p)
 
