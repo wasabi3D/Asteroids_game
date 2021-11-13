@@ -330,6 +330,7 @@ class AstGroup(sprite.Group):
         sp: Asteroid
         for sp in self.sprites():
             if is_colliding(sp.pCollider, pl.pCollider):
+                self.remove(sp)
                 return True
         return False
 
