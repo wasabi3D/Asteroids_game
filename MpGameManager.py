@@ -201,7 +201,7 @@ class Client:
                             self.small_asteroids[aid].set_pos((x, y), angle)
                             self.small_asteroids[aid].angle = angle
                         else:
-                            a = Gc.Asteroid((x, y), angle, small=True, ast_id=id, img=image_index)
+                            a = Gc.Asteroid((x, y), angle, small=True, ast_id=aid, img=image_index)
                             self.small_asteroids.setdefault(aid, a)
                         if aid in small_ast_remove_flag:
                             small_ast_remove_flag.remove(aid)
@@ -244,7 +244,8 @@ class Client:
                         self.bullets.pop(bid)
                 for ip_ in players_remove_flag:
                     if ip_ == self.my_ip and self.spawned:
-                        self.dead = True
+                        # self.dead = True
+                        print("Dead")
                         continue
                     if ip_ in self.other_players.keys():
                         self.other_players.pop(ip_)
