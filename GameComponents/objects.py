@@ -254,12 +254,12 @@ class Asteroid(pygame.sprite.Sprite):
         if img == "":
             self.img_index = random.randrange(0, len(glocals.ASTS))
         else:
-            self.img_index = img
+            self.img_index = int(img)
 
         if not small:
             self.image = ml.dat[glocals.ASTS[self.img_index]]
         else:
-            self.image = ml.dat['smallA' + self.img_index]
+            self.image = ml.dat['smallA' + glocals.ASTS[self.img_index][1:]]
 
         self.clone = self.image.copy()
         self.rect = self.image.get_rect(center=xy)
