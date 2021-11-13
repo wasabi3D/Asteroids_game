@@ -77,7 +77,7 @@ class Client:
 
         # >>>>> INITIALIZE >>>>>
         host_send = Gc.Send(self.host_ip, DEFAULT_PORT)
-        me = Gc.MpPlayer((random.randint(0, 600), random.randint(0, 600)), Gc.ml.dat[PLAYER], self.name)
+        me = Gc.MpPlayer((random.randint(0, 600), random.randint(0, 600)), Gc.ml.dat[PLAYER], self.name, HP)
         mynametag = Gc.TextUI(self.font, DEFAULT_TEXT_COL, self.name,
                               Gc.Coordinate(me.cords.x + NAMETAG_OFFSET[0], me.cords.y + NAMETAG_OFFSET[1]))
         # <<<<<<<<
@@ -213,7 +213,8 @@ class Client:
                 elif i.msg == COM_PLAYER_POS:
                     sp = i.value.split(DELIMITER)
                     x, y, a, ip = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), sp[3]
-                    players_remove_flag.remove(ip)
+                    if ip in self.other_players.keys():
+                        players_remove_flag.remove(ip)
                     if ip == self.my_ip:
                         continue
                     name = i.other
@@ -295,7 +296,7 @@ class Host:
         font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 15)
         wait_txt = Gc.TextUI(font, DEFAULT_TEXT_COL, "Waiting for players...", Gc.Coordinate(SCREEN_DIMENSION[0] / 2,
                                                                                              SCREEN_DIMENSION[1] / 2))
-        ip_txt = Gc.TextUI(font, DEFAULT_TEXT_COL, f"Give this ip to your friends: {Gc.get_local_ip()}",
+        ip_txt = Gc.TextUI(font, DEFAULT_TEXT_COL, f"Share this ip to your friends: {Gc.get_local_ip()}",
                            Gc.Coordinate(50, 50))
 
         players_txt = []
