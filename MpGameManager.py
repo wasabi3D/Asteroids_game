@@ -63,7 +63,7 @@ class Client:
         # <<<<<<
 
         # >>>>>> WAIT FOR START >>>>>
-        connecting_txt.set_text("Waiting for start...")
+        connecting_txt.set_text("Waiting for the start...")
         connecting_txt.blit(self.screen)
         pygame.display.update()
         while not self.game_started:

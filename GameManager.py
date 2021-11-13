@@ -19,7 +19,7 @@ def generate_gameover_window(score: int) -> Gc.MenuUI:
 
     score_text = Gc.UI.TextUI(pygame.font.Font(font_path, 13), DEFAULT_TEXT_COL, f"Score: {score}", Gc.Coordinate(0, 0))
 
-    menu = Gc.MenuUI("Game Over", ("Return to menu", "Quit game"), Gc.ml.dat[ARROW],
+    menu = Gc.MenuUI("Game Over", ("Return to the menu", "Quit game"), Gc.ml.dat[ARROW],
                      Gc.objects.Coordinate(SCREEN_DIMENSION[0] / 2 - 110, SCREEN_DIMENSION[1] / 2 - 100),
                      pygame.font.Font(font_path, 25), pygame.font.Font(font_path, 15), Gc.Coordinate(50, 20),
                      Gc.Coordinate(-30, -5), Gc.Coordinate(45, 80), 30, align="left")
@@ -52,8 +52,6 @@ def run():
     screen = pygame.display.set_mode(SCREEN_DIMENSION)
     pygame.display.set_caption(WINDOW_TITLE)
 
-    
-
     def menu(skip_menu=False):
         if skip_menu:
             return
@@ -73,7 +71,7 @@ def run():
                               title_offset, cursor_offset,
                               Gc.Coordinate(400, 300), 50, align="center", name="main")
 
-        multi_mode_select = Gc.MenuUI("Multiplayer", ("Host game", "Join existing game", "Back"), Gc.ml.dat[ARROW],
+        multi_mode_select = Gc.MenuUI("Multiplayer", ("Host game", "Join an existing game", "Back"), Gc.ml.dat[ARROW],
                                       Gc.Coordinate(0, 0), title_font, sc_font, title_offset, cursor_offset,
                                       Gc.Coordinate(500, 300), 75, align="right", name="mms")
 
