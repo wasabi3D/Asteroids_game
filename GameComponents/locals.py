@@ -44,7 +44,7 @@ PARTICLE_MAX = 16
 
 DEFAULT_PORT = 6385
 
-HP = 3
+HP = 5
 
 LINE = "line"
 
