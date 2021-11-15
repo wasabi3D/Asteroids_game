@@ -344,9 +344,10 @@ class Client:
                     if ip == self.my_ip:
                         self.spawned = True
                         self.dead = False
-                        self.me.health = health
-                        if x == int(SCREEN_DIMENSION[0] / 2) and y == int(SCREEN_DIMENSION[1] / 2):
-                            self.me.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), self.me.angle)
+                        if self.me is not None:
+                            self.me.health = health
+                            if x == int(SCREEN_DIMENSION[0] / 2) and y == int(SCREEN_DIMENSION[1] / 2):
+                                self.me.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), self.me.angle)
                         continue
                     if ip not in self.other_players.keys():
                         self.other_players.setdefault(ip, Gc.MpPlayer((x, y), Gc.ml.dat[PLAYER], name, HP))
