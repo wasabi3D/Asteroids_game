@@ -104,6 +104,14 @@ class Client:
             return COM_GAME_FULL
         # <<<<<<
 
+        # >>>>> INITIALIZE >>>>>
+        host_send = Gc.Send(self.host_ip, DEFAULT_PORT)
+        self.me = Gc.MpPlayer((random.randint(0, 600), random.randint(0, 600)), Gc.ml.dat[PLAYER], self.name, HP)
+        mynametag = Gc.TextUI(self.font, DEFAULT_TEXT_COL, self.name,
+                              Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0],
+                                            self.me.cords.y + NAMETAG_OFFSET[1]))
+        # <<<<<<<<
+
         # >>>>>> WAIT FOR START >>>>>
         connecting_txt.set_text("Waiting for the start...")
         connecting_txt.blit(self.screen)
@@ -114,13 +122,6 @@ class Client:
                 return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection timed out(lobby).", Gc.Coordinate(100, 700))
         self.running = True
         # <<<<<<<<<
-
-        # >>>>> INITIALIZE >>>>>
-        host_send = Gc.Send(self.host_ip, DEFAULT_PORT)
-        self.me = Gc.MpPlayer((random.randint(0, 600), random.randint(0, 600)), Gc.ml.dat[PLAYER], self.name, HP)
-        mynametag = Gc.TextUI(self.font, DEFAULT_TEXT_COL, self.name,
-                              Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[1]))
-        # <<<<<<<<
 
         # >>>>> MAIN LOOP >>>>>
         while self.running:
