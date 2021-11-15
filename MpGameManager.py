@@ -370,6 +370,7 @@ class Client:
         self.timeout_detector.join()
         print("waiting for other threads to finish..")
         for th in threading.enumerate():
+            print(th.name)
             if th is threading.currentThread():
                 continue
             th.join()

@@ -56,9 +56,13 @@ class Receive(threading.Thread):
     def kill(self):
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
-            self.sock.close()
         except OSError:
             print("warn: socket os error")
+
+        try:
+            self.sock.close()
+        except OSError:
+            print("warn: socket os error (close)")
 
         self.stop_ev.set()
         self.do_run = False
