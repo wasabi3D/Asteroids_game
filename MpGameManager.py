@@ -258,7 +258,7 @@ class Client:
                 for bid in bullets_remove_flag:
                     if bid in self.bullets.keys():
                         self.bullets.pop(bid)
-                        
+
             elif received.msg == COM_PLAYER_POS:
                 players_remove_flag: list[str] = list(self.other_players.keys())
                 players_remove_flag.append(self.my_ip)
@@ -273,7 +273,7 @@ class Client:
                     sp = i.value.split(DELIMITER)
                     osp = i.other.split(DELIMITER)
                     x, y, a, ip = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), sp[3]
-                    name, health, self.score = osp[0], int(float(osp[1])), int(float(osp(2)))
+                    name, health, self.score = osp[0], int(float(osp[1])), int(float(osp[2]))
 
                     if ip in players_remove_flag:
                         players_remove_flag.remove(ip)
@@ -600,7 +600,7 @@ class Host:
         if not self.dead:
             tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
                                  f"{self.me.cords.x}{DELIMITER}{self.me.cords.y}{DELIMITER}{self.me.angle}"
-                                 f"{DELIMITER}{self.my_ip}", self.name)
+                                 f"{DELIMITER}{self.my_ip}", f"{self.name}{DELIMITER}{self.me.health}{DELIMITER}{self.score}")
             common_info.append(tmp_msg.d())
         for ip, sprite in self.players_sprites.items():
             tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
