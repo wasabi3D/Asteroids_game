@@ -19,6 +19,18 @@ def get_turn_and_accel_state(pressed) -> tuple[bool, bool]:
     return t_, a_
 
 
+def generate_score_UI(score: int) -> Gc.UIGroup:
+    sc_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), SCORE_SIZE)
+    gui_sh = Gc.UIGroup(Gc.Coordinate(10, 10, clamp_coordinate=False))
+    gui_sh.add_UI_object(Gc.TextUI(sc_font, (217, 211, 211), str(score)),
+                         Gc.Coordinate(0, 0, clamp_coordinate=False), 0)
+    for x in range(HP):
+        gui_sh.add_UI_object(Gc.ImageUI(Gc.ml.dat[HEART], Gc.Coordinate(0, 0)),
+                             Gc.Coordinate(-10 + x * Gc.ml.dat[HEART].get_width() + 10, SCORE_SIZE + 10,
+                                           clamp_coordinate=False), x + 1)
+    return gui_sh
+
+
 class Client:
     def __init__(self, screen, host_ip, name):
         self.screen: pygame.Surface = screen
@@ -301,6 +313,7 @@ class Host:
         self.score = 0
         self.my_ip = Gc.get_local_ip()
         self.dead = False
+        self.score_gui = generate_score_UI(self.score)
 
         self.players_name_lobby.append(name)
         self.host_receive.start()
@@ -442,6 +455,12 @@ class Host:
                         self.me.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), 0)
             # +++
 
+            # +++GUI UPDATE+++
+            if self.score_gui.length() - 1 > self.me.health:
+                self.score_gui.remove(-1)
+            self.score_gui.set_text(str(self.score), 0)
+            # ++++++
+
             # +++DRAW OBJECTS+++
             self.bullets.draw(self.screen)
             self.asteroids.draw(self.screen)
@@ -461,6 +480,7 @@ class Host:
             self.bullets.update()
             self.asteroids.update()
             self.small_asteroids.update()
+            self.score_gui.blit(self.screen)
             pygame.display.update()
             pygame.time.Clock().tick(UPD)
             # ++++++
