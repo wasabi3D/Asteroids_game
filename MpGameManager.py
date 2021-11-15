@@ -31,6 +31,28 @@ def generate_score_UI(score: int) -> Gc.UIGroup:
     return gui_sh
 
 
+def generate_dead_UI():
+    font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 27)
+    gui = Gc.UIGroup(Gc.Coordinate(200, 20, clamp_coordinate=False))
+    gui.add_UI_object(Gc.TextUI(font, DEFAULT_TEXT_COL, "You died! Spectating the game."),
+                                Gc.Coordinate(0, 0, clamp_coordinate=False), 0)
+    return gui
+
+
+def generate_gameover_window(score: int) -> Gc.MenuUI:
+    font_path = os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT)
+
+    score_text = Gc.UI.TextUI(pygame.font.Font(font_path, 13), DEFAULT_TEXT_COL, f"Score: {score}", Gc.Coordinate(0, 0))
+
+    menu = Gc.MenuUI("Game Over", ("Return to the menu", "Quit game"), Gc.ml.dat[ARROW],
+                     Gc.objects.Coordinate(SCREEN_DIMENSION[0] / 2 - 110, SCREEN_DIMENSION[1] / 2 - 100),
+                     pygame.font.Font(font_path, 25), pygame.font.Font(font_path, 15), Gc.Coordinate(50, 20),
+                     Gc.Coordinate(-30, -5), Gc.Coordinate(45, 80), 30, align="left")
+    menu.add_UI_object(score_text, Gc.objects.Coordinate(50, 50), 1)
+
+    return menu
+
+
 class Client:
     def __init__(self, screen, host_ip, name):
         self.screen: pygame.Surface = screen
@@ -58,6 +80,8 @@ class Client:
         self.me: Gc.MpPlayer = None
         self.score = 0
         self.score_gui = generate_score_UI(self.score)
+        self.dead_ui = generate_dead_UI()
+        self.game_over_ui: Gc.MenuUI = None
 
         self.receive.start()
         self.timeout_detector.start()
@@ -163,18 +187,56 @@ class Client:
             # ++++++
 
             # +++UPDATES+++
+            if self.dead and len(self.other_players) < 1:
+                self.running = False
+
             if not self.dead:
                 turn, accel = get_turn_and_accel_state(pressed)
                 self.me.update(accel, turn)
                 self.me.blit(self.screen)
                 mynametag.set_pos(Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[1]))
                 mynametag.blit(self.screen)
+            else:
+                self.dead_ui.blit(self.screen)
             self.t_bullets -= 1
             self.score_gui.blit(self.screen)
             pygame.display.update()
             pygame.time.Clock().tick(UPD)
             # ++++++
         # <<<<<<<<
+
+        self.detect_timeout = False
+        lock_space = True
+        # >>>>>> GAME OVER >>>>>>
+        self.game_over_ui = generate_gameover_window(self.score)
+        while True:
+            # +++INPUT EVENTS+++
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.stop_client()
+                    sys.exit()
+            pressed = pygame.key.get_pressed()
+            # +++
+            self.screen.fill(BG_COLOR)
+
+            if pressed[K_DOWN] or pressed[K_s]:
+                self.game_over_ui.move_cursor(1)
+
+            if pressed[K_UP] or pressed[K_w]:
+                self.game_over_ui.move_cursor(-1)
+            if pressed[K_SPACE] and not lock_space:
+                select_index = self.game_over_ui.selected
+                if select_index == 0:
+                    self.stop_client()
+                    return
+                elif select_index == 1:
+                    sys.exit()
+
+            if not pressed[K_SPACE]:
+                lock_space = False
+            self.game_over_ui.blit(self.screen)
+            pygame.display.update()
+        # <<<<<<<<<<<
 
     def _try_join(self):
         tmp_send = Gc.Send(self.host_ip, DEFAULT_PORT)
@@ -348,6 +410,8 @@ class Host:
         self.my_ip = Gc.get_local_ip()
         self.dead = False
         self.score_gui = generate_score_UI(self.score)
+        self.dead_ui = generate_dead_UI()
+        self.game_over_ui: Gc.MenuUI = None
 
         self.players_name_lobby.append(name)
         self.host_receive.start()
@@ -502,11 +566,15 @@ class Host:
             # ++++++
 
             # +++UPDATE+++
+            if self.dead and len(self.players_sprites) < 1:
+                self.running = False
             if not self.dead:
                 self.me.update(accel, turn)
                 self.me.blit(self.screen)
                 mynametag.set_pos(Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[0]))
                 mynametag.blit(self.screen)
+            else:
+                self.dead_ui.blit(self.screen)
 
             threading.Thread(target=self._send_objects_data2client).start()
             self.tick += 1
@@ -519,6 +587,38 @@ class Host:
             pygame.time.Clock().tick(UPD)
             # ++++++
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+        lock_space = True
+        # >>>>>> GAME OVER >>>>>>
+        self.game_over_ui = generate_gameover_window(self.score)
+        while True:
+            # +++INPUT EVENTS+++
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.kill_host()
+                    sys.exit()
+            pressed = pygame.key.get_pressed()
+            # +++
+            self.screen.fill(BG_COLOR)
+
+            if pressed[K_DOWN] or pressed[K_s]:
+                self.game_over_ui.move_cursor(1)
+
+            if pressed[K_UP] or pressed[K_w]:
+                self.game_over_ui.move_cursor(-1)
+            if pressed[K_SPACE] and not lock_space:
+                select_index = self.game_over_ui.selected
+                if select_index == 0:
+                    self.kill_host()
+                    return
+                elif select_index == 1:
+                    sys.exit()
+
+            if not pressed[K_SPACE]:
+                lock_space = False
+            self.game_over_ui.blit(self.screen)
+            pygame.display.update()
+        # <<<<<<<<<<<
 
     def _on_rec_from_client(self, msg_, addr):
         received = Gc.GameCom("", "", "", "")
