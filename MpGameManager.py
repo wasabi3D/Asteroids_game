@@ -577,7 +577,7 @@ class Host:
         for ip, sprite in self.players_sprites.items():
             tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
                                  f"{sprite.cords.x}{DELIMITER}{sprite.cords.y}{DELIMITER}"
-                                 f"{sprite.angle}{DELIMITER}{ip}", DELIMITER.join(sprite.name, sprite.health, self.score))
+                                 f"{sprite.angle}{DELIMITER}{ip}", DELIMITER.join([sprite.name, sprite.health, self.score]))
             common_info.append(tmp_msg.d())
         # +++
 
