@@ -56,6 +56,8 @@ class Client:
         self.dead = False
         self.spawned = False
         self.me: Gc.MpPlayer = None
+        self.score = 0
+        self.score_gui = generate_score_UI(self.score)
 
         self.receive.start()
         self.timeout_detector.start()
@@ -148,6 +150,12 @@ class Client:
                 a.blit(self.screen)
             # ++++++
 
+            # +++GUI UPDATE+++
+            if self.score_gui.length() - 1 > self.me.health:
+                self.score_gui.remove(-1)
+            self.score_gui.set_text(str(self.score), 0)
+            # ++++++
+
             # +++DRAW BULLETS+++
             b: Gc.Bullet
             for b in self.bullets.values():
@@ -162,6 +170,7 @@ class Client:
                 mynametag.set_pos(Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[1]))
                 mynametag.blit(self.screen)
             self.t_bullets -= 1
+            self.score_gui.blit(self.screen)
             pygame.display.update()
             pygame.time.Clock().tick(UPD)
             # ++++++
@@ -230,17 +239,19 @@ class Client:
                         bullets_remove_flag.remove(bid)
                 elif i.msg == COM_PLAYER_POS:
                     sp = i.value.split(DELIMITER)
+                    osp = i.other.split(DELIMITER)
                     x, y, a, ip = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), sp[3]
+                    name, health, self.score = osp[0], int(float(osp[1])), int(float(osp(2)))
+
                     if ip in players_remove_flag:
-                        print(ip)
                         players_remove_flag.remove(ip)
                     if ip == self.my_ip:
                         self.spawned = True
                         self.dead = False
+                        self.me.health = health
                         if x == int(SCREEN_DIMENSION[0] / 2) and y == int(SCREEN_DIMENSION[1] / 2):
                             self.me.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), self.me.angle)
                         continue
-                    name = i.other
                     if ip not in self.other_players.keys():
                         self.other_players.setdefault(ip, Gc.MpPlayer((x, y), Gc.ml.dat[PLAYER], name, HP))
                         p = self.other_players[ip]
@@ -566,7 +577,7 @@ class Host:
         for ip, sprite in self.players_sprites.items():
             tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
                                  f"{sprite.cords.x}{DELIMITER}{sprite.cords.y}{DELIMITER}"
-                                 f"{sprite.angle}{DELIMITER}{ip}", sprite.name)
+                                 f"{sprite.angle}{DELIMITER}{ip}", DELIMITER.join(sprite.name, sprite.health, self.score))
             common_info.append(tmp_msg.d())
         # +++
 
