@@ -191,22 +191,20 @@ class Client:
             else:
                 self.connection_state = received.msg
         elif received.info_type == COM_GAMEDATINFO:
-            ast_remove_flag: list[int] = list(self.asteroids.keys())
-            small_ast_remove_flag: list[int] = list(self.small_asteroids.keys())
-            bullets_remove_flag: list[int] = list(self.bullets.keys())
-            players_remove_flag: list[str] = list(self.other_players.keys())
-            players_remove_flag.append(self.my_ip)
-            info: list[Gc.GameCom] = []
-            d: dict
-            for d in json.loads(received.msg):
-                g_ = Gc.GameCom("", "", "", "")
-                g_.__dict__ = d
-                info.append(g_)
+            if received.msg == COM_ASTEROID:
+                ast_remove_flag: list[int] = list(self.asteroids.keys())
+                small_ast_remove_flag: list[int] = list(self.small_asteroids.keys())
+                info: list[Gc.GameCom] = []
+                d: dict
+                for d in json.loads(received.value):
+                    g_ = Gc.GameCom("", "", "", "")
+                    g_.__dict__ = d
+                    info.append(g_)
 
-            for i in info:
-                if i.msg == COM_ASTEROID:
+                for i in info:
                     tmp = i.value.split(DELIMITER)
-                    x, y, angle, aid = int(float(tmp[0])), int(float(tmp[1])), int(float(tmp[2])), int(float(tmp[3]))
+                    x, y, angle, aid = int(float(tmp[0])), int(float(tmp[1])), int(float(tmp[2])), int(
+                        float(tmp[3]))
                     tmp = i.other.split(DELIMITER)
                     small, image_index = bool(strtobool(tmp[0])), tmp[1]
                     if not small:
@@ -227,7 +225,25 @@ class Client:
                             self.small_asteroids.setdefault(aid, a)
                         if aid in small_ast_remove_flag:
                             small_ast_remove_flag.remove(aid)
-                elif i.msg == COM_BULLET:
+
+                # Remove unnecessary objects
+                for aid in ast_remove_flag:
+                    if aid in self.asteroids.keys():
+                        self.asteroids.pop(aid)
+                for aid in small_ast_remove_flag:
+                    if aid in self.small_asteroids.keys():
+                        self.small_asteroids.pop(aid)
+
+            elif received.msg == COM_BULLET:
+                bullets_remove_flag: list[int] = list(self.bullets.keys())
+                info: list[Gc.GameCom] = []
+                d: dict
+                for d in json.loads(received.value):
+                    g_ = Gc.GameCom("", "", "", "")
+                    g_.__dict__ = d
+                    info.append(g_)
+
+                for i in info:
                     tmp = i.value.split(DELIMITER)
                     x, y, bid = int(float(tmp[0])), int(float(tmp[1])), int(float(tmp[2]))
                     if bid in self.bullets.keys():
@@ -237,7 +253,23 @@ class Client:
                         self.bullets.setdefault(bid, b)
                     if bid in bullets_remove_flag:
                         bullets_remove_flag.remove(bid)
-                elif i.msg == COM_PLAYER_POS:
+
+                # Remove unnecessary objects
+                for bid in bullets_remove_flag:
+                    if bid in self.bullets.keys():
+                        self.bullets.pop(bid)
+                        
+            elif received.msg == COM_PLAYER_POS:
+                players_remove_flag: list[str] = list(self.other_players.keys())
+                players_remove_flag.append(self.my_ip)
+                info: list[Gc.GameCom] = []
+                d: dict
+                for d in json.loads(received.value):
+                    g_ = Gc.GameCom("", "", "", "")
+                    g_.__dict__ = d
+                    info.append(g_)
+
+                for i in info:
                     sp = i.value.split(DELIMITER)
                     osp = i.other.split(DELIMITER)
                     x, y, a, ip = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), sp[3]
@@ -260,22 +292,13 @@ class Client:
                                                                              p.cords.y + NAMETAG_OFFSET[1])))
                     self.other_players[ip].set_pos((x, y), a)
 
-            # Remove unnecessary objects
-            for aid in ast_remove_flag:
-                if aid in self.asteroids.keys():
-                    self.asteroids.pop(aid)
-            for aid in small_ast_remove_flag:
-                if aid in self.small_asteroids.keys():
-                    self.small_asteroids.pop(aid)
-            for bid in bullets_remove_flag:
-                if bid in self.bullets.keys():
-                    self.bullets.pop(bid)
-            for ip_ in players_remove_flag:
-                if ip_ == self.my_ip and self.spawned:
-                    self.dead = True
-                    print("Dead")
-                if ip_ in self.other_players.keys():
-                    self.other_players.pop(ip_)
+                # Remove unnecessary objects
+                for ip_ in players_remove_flag:
+                    if ip_ == self.my_ip and self.spawned:
+                        self.dead = True
+                        print("Dead")
+                    if ip_ in self.other_players.keys():
+                        self.other_players.pop(ip_)
 
     def stop_client(self):
         self.receive.kill()
@@ -547,12 +570,6 @@ class Host:
         s: Gc.Send
         common_info: list[dict] = []
 
-        # HOST itself
-        if not self.dead:
-            tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
-                                 f"{self.me.cords.x}{DELIMITER}{self.me.cords.y}{DELIMITER}{self.me.angle}"
-                                 f"{DELIMITER}{self.my_ip}", self.name)
-            common_info.append(tmp_msg.d())
         # +++ASTEROIDS+++
         ast: Gc.Asteroid
         for ast in self.asteroids.sprites():
@@ -565,6 +582,9 @@ class Host:
                                                                 f"{ast.angle}{DELIMITER}{ast.id}",
                                  f"{True}{DELIMITER}{ast.img_index}")
             common_info.append(tmp_msg.d())
+        ast_pk = Gc.GameCom(COM_GAMEDATINFO, COM_ASTEROID, json.dumps(common_info), "")
+        common_info.clear()
+
         # +++
         # +++BULLETS+++
         bul: Gc.Bullet
@@ -572,18 +592,31 @@ class Host:
             tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_BULLET, f"{bul.cords.x}{DELIMITER}{bul.cords.y}"
                                                               f"{DELIMITER}{bul.id}", "")
             common_info.append(tmp_msg.d())
+        bul_pk = Gc.GameCom(COM_GAMEDATINFO, COM_BULLET, json.dumps(common_info), "")
+        common_info.clear()
         # +++
         # +++OTHER PLAYER's INFORMATION+++
+        # HOST itself
+        if not self.dead:
+            tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
+                                 f"{self.me.cords.x}{DELIMITER}{self.me.cords.y}{DELIMITER}{self.me.angle}"
+                                 f"{DELIMITER}{self.my_ip}", self.name)
+            common_info.append(tmp_msg.d())
         for ip, sprite in self.players_sprites.items():
             tmp_msg = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS,
                                  f"{sprite.cords.x}{DELIMITER}{sprite.cords.y}{DELIMITER}"
-                                 f"{sprite.angle}{DELIMITER}{ip}", DELIMITER.join([sprite.name, str(sprite.health), str(self.score)]))
+                                 f"{sprite.angle}{DELIMITER}{ip}", f"{sprite.name}{DELIMITER}{sprite.health}{DELIMITER}{self.score}")
             common_info.append(tmp_msg.d())
+        pl_pk = Gc.GameCom(COM_GAMEDATINFO, COM_PLAYER_POS, json.dumps(common_info), "")
         # +++
 
         for s_ in self.send_objects:
             s = s_.copy()
 
-            final = Gc.GameCom(COM_GAMEDATINFO, json.dumps(common_info), "", "")
-            s.set_message(json.dumps(final.d()))
+            s.set_message(json.dumps(ast_pk.d()))
             s.run()
+            s.set_message(json.dumps(bul_pk.d()))
+            s.run()
+            s.set_message(json.dumps(pl_pk.d()))
+            s.run()
+
