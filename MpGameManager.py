@@ -171,7 +171,6 @@ class Client:
             for a in list(self.asteroids.values()).copy():
                 a.blit(self.screen)
             for a in list(self.small_asteroids.values()).copy():
-                print("yes")
                 a.blit(self.screen)
             # ++++++
 
@@ -361,7 +360,6 @@ class Client:
                 for ip_ in players_remove_flag:
                     if ip_ == self.my_ip and self.spawned:
                         self.dead = True
-                        print("Dead")
                     if ip_ in self.other_players.keys():
                         self.other_players.pop(ip_)
 
@@ -378,7 +376,7 @@ class Client:
 
     def _timeout_detection(self):
         while self.detect_timeout:
-            print(time.time() - self.last_host_response)
+            # print(time.time() - self.last_host_response)
             if time.time() - self.last_host_response > TIMEOUT:
                 self.timed_out = True
                 break
@@ -656,7 +654,7 @@ class Host:
     def _ping_connected_players(self):
         while self.do_ping:
             for ip in self.ips:
-                print(ip)
+                # print(ip)
                 tmp_send = Gc.Send(ip, DEFAULT_PORT)
                 tmp_send.send_message(json.dumps(Gc.GameCom(COM_PREP, COM_PING, "", "").d()))
             time.sleep(4)

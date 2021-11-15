@@ -2,8 +2,13 @@ import GameManager
 import pygame
 from GameComponents.p2p import *
 
+VERSION = "0.0.1 alpha"
+
 
 if __name__ == "__main__":
+    print("===========")
+    print(f"ASTEROIDS GAME verison {VERSION}")
+    print("===========")
     pygame.init()
     pygame.mixer.init()
     pygame.font.init()
