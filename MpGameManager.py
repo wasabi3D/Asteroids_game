@@ -231,6 +231,7 @@ class Client:
                     self.stop_client()
                     return
                 elif select_index == 1:
+                    self.stop_client()
                     sys.exit()
 
             if not pressed[K_SPACE]:
@@ -613,6 +614,7 @@ class Host:
                     self.kill_host()
                     return
                 elif select_index == 1:
+                    self.kill_host()
                     sys.exit()
 
             if not pressed[K_SPACE]:
