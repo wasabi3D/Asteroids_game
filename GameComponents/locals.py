@@ -19,7 +19,7 @@ BULLET_SPEED = 20
 ASTEROID_SPD = 80
 ASTEROID_ANIM_TORQUE = 25
 ASTS = ['ast1', 'ast2', 'ast3', 'ast4', 'ast5', 'ast6']
-AST_FREQUECY = 5          # an asteroid every {AST_FREQUECY} sec
+AST_FREQUECY = 0.5          # an asteroid every {AST_FREQUECY} sec
 SMALL_ASTS_PDA = (1, 3)
 POINTS_P_AST = 100        # for big, smalls are half that
 

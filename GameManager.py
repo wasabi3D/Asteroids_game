@@ -15,6 +15,12 @@ another_connected = False
 opponent_send = None
 
 def generate_gameover_window(score: int) -> Gc.MenuUI:
+    """
+    Fonction permettant de générer les UI quand le joueur meurt.
+
+    :params: Le score final
+    :return: Une instance de MenuUI qui contient les UI.
+    """
     font_path = os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT)
 
     score_text = Gc.UI.TextUI(pygame.font.Font(font_path, 13), DEFAULT_TEXT_COL, f"Score: {score}", Gc.Coordinate(0, 0))
@@ -29,6 +35,12 @@ def generate_gameover_window(score: int) -> Gc.MenuUI:
 
 
 def generate_score_UI(score: int) -> Gc.UIGroup:
+    """
+    Fonction permettant de générer le UI de score et de HP.
+
+    :params: Le score final
+    :return: Une instance de UIGroup qui contient les UI.
+    """
     sc_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), SCORE_SIZE)
     gui_sh = Gc.UIGroup(Gc.Coordinate(10, 10, clamp_coordinate=False))
     gui_sh.add_UI_object(Gc.TextUI(sc_font, (217, 211, 211), str(score)),
@@ -41,6 +53,15 @@ def generate_score_UI(score: int) -> Gc.UIGroup:
 
 
 def get_turn_and_accel_state(pressed: Sequence[bool]) -> tuple[bool, bool]:
+    """Fonction permettant de savoir si le joueur est en train de accélérer(ou pas) et si il est en train de tourner(ou pas).
+
+    :param pressed: Un sequence de bool renvoyé par la fonction pygame
+    :return: Une tuple de bool où
+            = Le premier représente comment le joueur tourne(None si il tourne pas, True si il tourne dans
+            le sens de l'aiguille de montre et False à l'envers. )
+
+            = Le deuxième représente si le joueur accélère( True si oui False si non)
+    """
     angle_clwise = pressed[K_RIGHT] or pressed[K_d]
     angle_counter_clwise = pressed[K_LEFT] or pressed[K_a]
     t_ = None if not angle_clwise ^ angle_counter_clwise else angle_clwise
@@ -49,10 +70,15 @@ def get_turn_and_accel_state(pressed: Sequence[bool]) -> tuple[bool, bool]:
 
 
 def run():
+    """Fonction appelé par main.py pour démarrer le jeu."""
+    # Init fenêtre
     screen = pygame.display.set_mode(SCREEN_DIMENSION)
     pygame.display.set_caption(WINDOW_TITLE)
 
     def menu(skip_menu=False):
+        """Fonction appelé après run() ou game() pour afficher le menu du jeu.
+        :param skip_menu: Si on passe directement à game() ou pas.
+        """
         if skip_menu:
             return
 
@@ -199,6 +225,10 @@ def run():
 
     # SINGLE PLAYER GAME LOOP
     def game():
+        """Fonction appelé pour démarrer le mode multiplayer.
+        """
+
+        # >>>>>> Initialize >>>>>>>
         running = True
         player = Gc.Player((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), Gc.ml.dat[PLAYER])
         score = 0
@@ -216,17 +246,22 @@ def run():
         gui_sh = generate_score_UI(score)
 
         tick = 0
+        # <<<<<<<<<
+
+        # >>>>>> Main loop >>>>>>
         while running:
+            # ++++ Input events ++++
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
-
-            screen.fill(BG_COLOR)  # Background
-
             pressed = pygame.key.get_pressed()
             turn, accel = get_turn_and_accel_state(pressed)
+            # +++++++
 
-            if tick % (UPD * AST_FREQUECY) == 0:  # Generate asteroids
+            screen.fill(BG_COLOR)  # Background
+            
+            # ++++ Generate asteroids ++++
+            if tick % (UPD * AST_FREQUECY) == 0:  
                 if random.randint(0, 1) == 1:
                     x = random.randint(0, SCREEN_DIMENSION[0] - 1)
                     y = 0
@@ -234,6 +269,7 @@ def run():
                     y = random.randint(0, SCREEN_DIMENSION[1] - 1)
                     x = 0
                 asteroids.add(Gc.Asteroid((x, y), random.randint(0, 359)))
+            # +++++
 
             destroyed = asteroids.is_colliding_destroy_bullet(bullets, particles)
             score += len(destroyed) * POINTS_P_AST
@@ -278,9 +314,8 @@ def run():
 
             if not pressed[K_SPACE]:
                 lock_space = False
-            # >>>>>>>>
 
-            # updates
+            # ++++Updates++++
             tick += 1
             t_bullets -= 1
             gui_sh.set_text(str(score), 0)
@@ -293,6 +328,8 @@ def run():
             small_asteroids.draw(screen)
             pygame.display.update()
             pygame.time.Clock().tick(UPD)
+            # ++++++
+        # <<<<<<<<<<
 
     while True:
         menu()

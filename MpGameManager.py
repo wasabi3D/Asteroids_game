@@ -360,6 +360,7 @@ class Client:
                 for ip_ in players_remove_flag:
                     if ip_ == self.my_ip and self.spawned:
                         self.dead = True
+                        self.me.health = 0
                     if ip_ in self.other_players.keys():
                         self.other_players.pop(ip_)
 
@@ -500,7 +501,7 @@ class Host:
             # ++++++
 
             # +++ASTEROIDS GENERATION+++
-            if self.tick % (UPD * AST_FREQUECY) == 0:  # Generate asteroids
+            if self.tick % (UPD * int(AST_FREQUECY / (len(self.players_sprites) + 1))) == 0:  # Generate asteroids
                 if random.randint(0, 1) == 1:
                     x = random.randint(0, SCREEN_DIMENSION[0] - 1)
                     y = 0

@@ -10,7 +10,10 @@ import GameComponents.locals as glocals
 ml = Medialoader.Loader()
 
 
-def clamp(min_, max_, n):
+def clamp(min_, max_, n) -> int:
+    """
+    :return: rend la valeur n en fesant en sorte quelle reste entre min_ et max_
+    """
     if n < min_:
         return min_
     elif n > max_:
@@ -19,16 +22,16 @@ def clamp(min_, max_, n):
         return n
 
 
-def lerp(org, arr, value):
-    return org + (arr - org) * value
-
 
 class Coordinate:
-    """
-    Class qui permet de représenter les coordonnées des objets dans le jeu. 
-    """
+    """Class qui permet de représenter les coordonnées des objets dans le jeu. """
 
-    def __init__(self, x: int, y: int, clamp_coordinate=True):
+    def __init__(self, x: int, y: int, clamp_coordinate=True) -> None:
+        """
+        :param x: coordonnée x
+        :param y: coordonnée y
+        :param clamp_coordinate: définit si les coordonées doivent rester dans les valeurs de la taille de la fenêtre
+        """
         self.x = x
         self.y = y
         self.t = (self.x, self.y)  # TUPLE
@@ -36,7 +39,14 @@ class Coordinate:
         self.max_x = glocals.SCREEN_DIMENSION[0]
         self.max_y = glocals.SCREEN_DIMENSION[1]
 
-    def update(self, x: int, y: int, additive=False):
+    def update(self, x: int, y: int, additive=False) -> None:
+        """ permet de modifier les valeurs de l'objet
+
+        :param x: nouvelle coordonnée x ou valeur à ajouter à self.x
+        :param y: nouvelle coordonnée y ou valeur à ajouter à self.y
+        :param additive: définit si on fait le somme des anciennes valeurs x et y (additive = True) 
+                         ou on remplace les anciennes valeurs par les nouvelles   (additive = False)
+        """
         if additive:
             self.x += x
             self.y += y
@@ -47,17 +57,11 @@ class Coordinate:
             self.clamp()
         self.t = (self.x, self.y)
 
-    def __add__(self, other):
-        if type(other) is Coordinate:
-            return Coordinate(self.x + other.x, self.y + other.y, clamp_coordinate=(self.do_clamp or other.do_clamp))
-        elif type(other) is tuple:
-            return Coordinate(self.x + other[0], self.y + other[1], clamp_coordinate=self.do_clamp)
-        elif type(other) is Vector2:
-            return Coordinate(self.x + other.x, self.y + other.y, clamp_coordinate=self.do_clamp)
-        elif type(other) is int or type(other) is float:
-            return Coordinate(self.x + other, self.y + other, clamp_coordinate=self.do_clamp)
-
-    def clamp(self):
+    def clamp(self) -> None:
+        """ fait en sorte que les coordonnées restent dans la fenêtre:
+            si les valeurs sont plus grandes que la taille de la fenêtre alors les nouvelles valeurs seront 0
+            si les valeurs sont plus petites que 0 alors elles deviendront la taille maximale de la fenêtre 
+        """
         if self.x < 0:
             self.x = self.max_x
         elif self.x > self.max_x:
