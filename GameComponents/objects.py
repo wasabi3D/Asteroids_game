@@ -1,3 +1,4 @@
+import os
 import random
 import pygame
 from pygame import Surface, sprite
@@ -6,7 +7,7 @@ from pygame.locals import *
 from collections import Sequence
 
 import GameComponents.Medialoader as Medialoader
-import GameComponents.locals as glocals
+from GameComponents.locals import *
 ml = Medialoader.Loader()
 
 
@@ -22,7 +23,6 @@ def clamp(min_, max_, n) -> int:
         return n
 
 
-
 class Coordinate:
     """Class qui permet de représenter les coordonnées des objets dans le jeu. """
 
@@ -36,8 +36,14 @@ class Coordinate:
         self.y = y
         self.t = (self.x, self.y)  # TUPLE
         self.do_clamp = clamp_coordinate
-        self.max_x = glocals.SCREEN_DIMENSION[0]
-        self.max_y = glocals.SCREEN_DIMENSION[1]
+        self.max_x = SCREEN_DIMENSION[0]
+        self.max_y = SCREEN_DIMENSION[1]
+
+    def __add__(self, other):
+        if isinstance(other, Vector2):
+            return Coordinate(self.x + other.x, self.y + other.y, self.do_clamp)
+        elif isinstance(other, Coordinate):
+            return Coordinate(self.x + other.x, self.y + other.y, self.do_clamp)
 
     def update(self, x: int, y: int, additive=False) -> None:
         """ permet de modifier les valeurs de l'objet
@@ -113,7 +119,7 @@ class Player(pygame.sprite.Sprite):
         self.pCollider = Collider(self.cords, round(self.image.get_rect().width / 2))
         self.shoot_vector = Vector2(0, -1)
 
-    def update(self, acc: bool, acc_ang: bool, delta: float = 1 / glocals.UPD) -> None:
+    def update(self, acc: bool, acc_ang: bool, delta: float = 1 / UPD) -> None:
         """fonction qu'on lance à chaque update permettant de calculer les nouvelles positions et direction de l'objet
         :param acc: bool qui est True si on veut accelerer et false si on arrète d'accelerer
         :param acc_ang: bool que est True si on veut tourner dans le sens horaire, False pour antihoraire et est None si on ne veut pas tourner
@@ -126,18 +132,18 @@ class Player(pygame.sprite.Sprite):
         
         # Cette zone s'occupe de la rotation de l'objet
         if acc_ang is None: # si on ne veut pas tourner
-            self.turning_speed *= glocals.TURN_MULTIPLIER_PF
+            self.turning_speed *= TURN_MULTIPLIER_PF
         elif acc_ang: # si on veut tourner dans le sens des aiguilles d'une montre
-            self.turning_speed += glocals.TURN_ACC * delta
+            self.turning_speed += TURN_ACC * delta
         elif not acc_ang: # si on veut tourner dans le sens contraire des aiguilles d'une montre
-            self.turning_speed -= glocals.TURN_ACC * delta
-        self.turning_speed = clamp(-glocals.MAX_TURN_SPEED, glocals.MAX_TURN_SPEED, self.turning_speed)
+            self.turning_speed -= TURN_ACC * delta
+        self.turning_speed = clamp(-MAX_TURN_SPEED, MAX_TURN_SPEED, self.turning_speed)
         self.rotate(self.turning_speed * delta) # rotate l'objet
 
         # s'occupe de la modification de l'acceleration
         if acc is True: # si on veut accelerer
-            self.acc_spd += glocals.ACC * delta
-            self.acc_spd = clamp(0, glocals.ACC, self.acc_spd)
+            self.acc_spd += ACC * delta
+            self.acc_spd = clamp(0, ACC, self.acc_spd)
             tmp_vec = Vector2(0, -1)
             tmp_vec.rotate_ip(self.angle)
             self.speed_vector += tmp_vec * self.acc_spd * delta
@@ -147,9 +153,9 @@ class Player(pygame.sprite.Sprite):
         # modifie le vecteur vitesse
         cur_spd = self.speed_vector.length_squared()
         if cur_spd > 0.1:
-            self.speed_vector += -self.speed_vector * glocals.BREAK_MULTIPLIER
-        if cur_spd > glocals.MAX_SPEED ** 2:
-            self.speed_vector.scale_to_length(glocals.MAX_SPEED)
+            self.speed_vector += -1 * self.speed_vector * BREAK_MULTIPLIER
+        if cur_spd > MAX_SPEED ** 2:
+            self.speed_vector.scale_to_length(MAX_SPEED)
 
         # modification des coordonées
         self.cords.update(self.speed_vector.x * delta, self.speed_vector.y * delta, additive=True)
@@ -220,7 +226,7 @@ class BreakParticle(pygame.sprite.Sprite):
         :param speed: définit la vitesse de la particule
         """
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(ml.dat[glocals.BULLET].copy(), (2, 2))
+        self.image = pygame.transform.scale(ml.dat[BULLET].copy(), (2, 2))
         self.copy = self.image
         self.rect = self.image.get_rect(center=pos.t)
         self.pos = pos
@@ -231,8 +237,8 @@ class BreakParticle(pygame.sprite.Sprite):
 
     def update(self) -> None:
         """Modifie la position et la transparance des particules"""
-        self.rect.move_ip(self.vector.x * self.speed / glocals.UPD, self.vector.y * self.speed / glocals.UPD)
-        self.alpha = int(self.alpha - self.dec / glocals.UPD)
+        self.rect.move_ip(self.vector.x * self.speed / UPD, self.vector.y * self.speed / UPD)
+        self.alpha = int(self.alpha - self.dec / UPD)
         if self.alpha < 0:
             self.alpha = 0
         self.image.fill((255, 255, 255, self.alpha), None, pygame.BLEND_RGBA_MULT)
@@ -252,7 +258,7 @@ class BreakParticlesParent(sprite.Group):
 
         # Création des particules (angle au hazar)
         for _ in range(number):
-            p = BreakParticle(glocals.PARTICLE_LIFETIME, random.randint(0, 359), pos, glocals.PARTICLE_SPD)
+            p = BreakParticle(PARTICLE_LIFETIME, random.randint(0, 359), pos, PARTICLE_SPD)
             self.add(p)
 
     def update(self) -> None:
@@ -260,7 +266,7 @@ class BreakParticlesParent(sprite.Group):
         for sp in self.sprites():
             sp.update()
 
-        self.timer += 1 / glocals.UPD
+        self.timer += 1 / UPD
 
     def lifetime_reached(self) -> bool:
         """Nous dit si le groupe de particules est arrivé à sa fin
@@ -301,8 +307,8 @@ class Bullet(pygame.sprite.Sprite):
         """
         super().__init__()
         self.cords = Coordinate(xy[0], xy[1], clamp_coordinate=False)
-        self.vector = vector * glocals.BULLET_SPEED
-        self.image = ml.dat[glocals.BULLET]
+        self.vector = vector * BULLET_SPEED
+        self.image = ml.dat[BULLET]
         self.rect = self.image.get_rect(center=xy)
         self.pCollider = Collider(self.cords, self.image.get_width())
         self.id = bul_id
@@ -310,11 +316,11 @@ class Bullet(pygame.sprite.Sprite):
     def update(self) -> bool:
         """Met à jour les coordonées de la balle
         :return: True si la balle à dépassé les bordures de la fenêtre sinon False"""
-        self.cords = self.cords + self.vector / glocals.UPD
+        self.cords = self.cords + self.vector / UPD
         self.pCollider.update(self.cords)
         self.rect = self.image.get_rect(center=self.cords.t)
-        if self.cords.x > glocals.SCREEN_DIMENSION[0] or self.cords.x < 0 or self.cords.y < 0 or self.cords.y > \
-                glocals.SCREEN_DIMENSION[1]:
+        if self.cords.x > SCREEN_DIMENSION[0] or self.cords.x < 0 or self.cords.y < 0 or self.cords.y > \
+                SCREEN_DIMENSION[1]:
             return True
         return False
 
@@ -339,21 +345,21 @@ class Asteroid(pygame.sprite.Sprite):
         """:param xy: """
         super().__init__()
         if img == "":
-            self.img_index = random.randrange(0, len(glocals.ASTS))
+            self.img_index = random.randrange(0, len(ASTS))
         else:
             self.img_index = int(img)
 
         if not small:
-            self.image = ml.dat[glocals.ASTS[self.img_index]]
+            self.image = ml.dat[ASTS[self.img_index]]
         else:
-            self.image = ml.dat['smallA' + glocals.ASTS[self.img_index][1:]]
+            self.image = ml.dat['smallA' + ASTS[self.img_index][1:]]
 
         self.clone = self.image.copy()
         self.rect = self.image.get_rect(center=xy)
         self.cords = Coordinate(xy[0], xy[1])
-        self.speed = glocals.ASTEROID_SPD
+        self.speed = ASTEROID_SPD
         self.angle = angle
-        self.torque = glocals.ASTEROID_ANIM_TORQUE  # degree/s
+        self.torque = ASTEROID_ANIM_TORQUE  # degree/s
         self.vector = Vector2(0, -1)
         self.vector.rotate_ip(angle)
         self.pCollider = Collider(self.cords, round(self.image.get_width() / 2))
@@ -364,7 +370,7 @@ class Asteroid(pygame.sprite.Sprite):
         self.move()
         self.angle %= 360
 
-    def move(self, delta=1 / glocals.UPD):
+    def move(self, delta=1 / UPD):
         self.cords.update(self.speed * self.vector.x * delta, self.speed * self.vector.y * delta, additive=True)
         self.rect = self.image.get_rect(center=self.cords.t)
         self.pCollider.update(self.cords)
@@ -424,9 +430,9 @@ class AstGroup(sprite.Group):
                 if is_colliding(sp.pCollider, bu.pCollider):
                     destroyed_list_cords.append(sp.cords)
                     if render_particles:
-                        particlesList.add_particle(BreakParticlesParent(glocals.PARTICLE_PARENT_LIFETIME,
-                                                                        random.randint(glocals.PARTICLE_MIN,
-                                                                                       glocals.PARTICLE_MAX), sp.cords))
+                        particlesList.add_particle(BreakParticlesParent(PARTICLE_PARENT_LIFETIME,
+                                                                        random.randint(PARTICLE_MIN,
+                                                                                       PARTICLE_MAX), sp.cords))
                     self.remove(sp)
                     other.remove(bu)
         return destroyed_list_cords

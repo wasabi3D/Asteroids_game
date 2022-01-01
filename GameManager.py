@@ -1,5 +1,5 @@
 import GameComponents as Gc
-from GameComponents.locals import *
+from GameComponents.UI import *
 import MpGameManager as mpgm
 import pygame
 from pygame.locals import *
@@ -10,6 +10,44 @@ import random
 
 another_connected = False
 opponent_send = None
+
+
+def generate_gameover_window(score: int) -> MenuUI:
+    """
+    Fonction permettant de générer les UI quand le joueur meurt.
+
+    :params: Le score final
+    :return: Une instance de MenuUI qui contient les UI.
+    """
+    font_path = os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT)
+
+    score_text = TextUI(pygame.font.Font(font_path, 13), DEFAULT_TEXT_COL, f"Score: {score}", Coordinate(0, 0))
+
+    menu = MenuUI("Game Over", ("Return to the menu", "Quit game"), ml.dat[ARROW],
+                     Coordinate(SCREEN_DIMENSION[0] / 2 - 110, SCREEN_DIMENSION[1] / 2 - 100),
+                     pygame.font.Font(font_path, 25), pygame.font.Font(font_path, 15), Coordinate(50, 20),
+                     Coordinate(-30, -5), Coordinate(45, 80), 30, align="left")
+    menu.add_UI_object(score_text, Coordinate(50, 50), 1)
+
+    return menu
+
+
+def generate_score_UI(score: int) -> UIGroup:
+    """
+    Fonction permettant de générer le UI de score et de HP.
+
+    :params: Le score final
+    :return: Une instance de UIGroup qui contient les UI.
+    """
+    sc_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), SCORE_SIZE)
+    gui_sh = UIGroup(Coordinate(10, 10, clamp_coordinate=False))
+    gui_sh.add_UI_object(TextUI(sc_font, (217, 211, 211), str(score)),
+                         Coordinate(0, 0, clamp_coordinate=False), 0)
+    for x in range(3):
+        gui_sh.add_UI_object(ImageUI(ml.dat[HEART], Coordinate(0, 0)),
+                            Coordinate(-10 + x * ml.dat[HEART].get_width() + 10, SCORE_SIZE + 10,
+                            clamp_coordinate=False), x + 1)
+    return gui_sh
 
 
 def run():
@@ -192,7 +230,7 @@ def run():
         lock_space = False  # Un bool pour bloquer la touch espace afin de ne pas aller directement au main menu apres que le player meurt
 
         particles = Gc.ParticlesGroup()  # Variable qui va contenir les particules qui apparaissent lors un asteroid se casse
-        gui_sh = Gc.objects.generate_score_UI(score)
+        gui_sh = generate_score_UI(score)
 
         tick = 0  # Nombre de ticks(frame) écoulés après le start du jeu
         # <<<<<<<<<
@@ -239,7 +277,7 @@ def run():
                     player.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), 0)
 
                 if gui_sh.length() == 1:  # Game over
-                    game_over_window = Gc.objects.generate_gameover_window(score)
+                    game_over_window = generate_gameover_window(score)
                     lock_space = True
 
             if game_over_window is None:
