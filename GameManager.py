@@ -1,5 +1,3 @@
-import threading
-from collections import Sequence
 import GameComponents as Gc
 from GameComponents.locals import *
 import MpGameManager as mpgm
@@ -8,65 +6,10 @@ from pygame.locals import *
 import sys
 import os
 import random
-import json
 
 
 another_connected = False
 opponent_send = None
-
-def generate_gameover_window(score: int) -> Gc.MenuUI:
-    """
-    Fonction permettant de générer les UI quand le joueur meurt.
-
-    :params: Le score final
-    :return: Une instance de MenuUI qui contient les UI.
-    """
-    font_path = os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT)
-
-    score_text = Gc.UI.TextUI(pygame.font.Font(font_path, 13), DEFAULT_TEXT_COL, f"Score: {score}", Gc.Coordinate(0, 0))
-
-    menu = Gc.MenuUI("Game Over", ("Return to the menu", "Quit game"), Gc.ml.dat[ARROW],
-                     Gc.objects.Coordinate(SCREEN_DIMENSION[0] / 2 - 110, SCREEN_DIMENSION[1] / 2 - 100),
-                     pygame.font.Font(font_path, 25), pygame.font.Font(font_path, 15), Gc.Coordinate(50, 20),
-                     Gc.Coordinate(-30, -5), Gc.Coordinate(45, 80), 30, align="left")
-    menu.add_UI_object(score_text, Gc.objects.Coordinate(50, 50), 1)
-
-    return menu
-
-
-def generate_score_UI(score: int) -> Gc.UIGroup:
-    """
-    Fonction permettant de générer le UI de score et de HP.
-
-    :params: Le score final
-    :return: Une instance de UIGroup qui contient les UI.
-    """
-    sc_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), SCORE_SIZE)
-    gui_sh = Gc.UIGroup(Gc.Coordinate(10, 10, clamp_coordinate=False))
-    gui_sh.add_UI_object(Gc.TextUI(sc_font, (217, 211, 211), str(score)),
-                         Gc.Coordinate(0, 0, clamp_coordinate=False), 0)
-    for x in range(3):
-        gui_sh.add_UI_object(Gc.ImageUI(Gc.ml.dat[HEART], Gc.Coordinate(0, 0)),
-                             Gc.Coordinate(-10 + x * Gc.ml.dat[HEART].get_width() + 10, SCORE_SIZE + 10,
-                                           clamp_coordinate=False), x + 1)
-    return gui_sh
-
-
-def get_turn_and_accel_state(pressed: Sequence[bool]) -> tuple[bool, bool]:
-    """Fonction permettant de savoir si le joueur est en train de accélérer(ou pas) et si il est en train de tourner(ou pas).
-
-    :param pressed: Un sequence de bool renvoyé par la fonction pygame
-    :return: Une tuple de bool où
-            = Le premier représente comment le joueur tourne(None si il tourne pas, True si il tourne dans
-            le sens de l'aiguille de montre et False à l'envers. )
-
-            = Le deuxième représente si le joueur accélère( True si oui False si non)
-    """
-    angle_clwise = pressed[K_RIGHT] or pressed[K_d]
-    angle_counter_clwise = pressed[K_LEFT] or pressed[K_a]
-    t_ = None if not angle_clwise ^ angle_counter_clwise else angle_clwise
-    a_ = pressed[K_w] or pressed[K_UP]
-    return t_, a_
 
 
 def run():
@@ -82,43 +25,49 @@ def run():
         if skip_menu:
             return
 
+        # ++++ INIT ++++
         title_offset = Gc.Coordinate(SCREEN_DIMENSION[0] / 2 - 130, 60)
         cursor_offset = Gc.Coordinate(-30, 0)
 
+        # fonts
         title_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), TITLE_SIZE)
-
         sc_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), SELECTABLE_SIZE)
 
+        # textbox, timeout text label, etc..
         additional_ui = []
 
+        # Le premier menu
         main_menu = Gc.MenuUI(TITLE_TXT, ("Single Player", "Multi Player", "Quit"), Gc.ml.dat[ARROW],
                               Gc.Coordinate(0, 0),
                               title_font, sc_font,
                               title_offset, cursor_offset,
                               Gc.Coordinate(400, 300), 50, align="center", name="main")
 
+        # Le menu où on choisit si le joueur host ou join une game
         multi_mode_select = Gc.MenuUI("Multiplayer", ("Host game", "Join an existing game", "Back"), Gc.ml.dat[ARROW],
                                       Gc.Coordinate(0, 0), title_font, sc_font, title_offset, cursor_offset,
                                       Gc.Coordinate(500, 300), 75, align="right", name="mms")
 
+        # Le menu où on met l'ip du host et le nom du joueur pour join un game
         join_multi_select = Gc.MenuUI("Join asteroid game", ("Enter IP: ", "Your name:", "Join", "Back"),
                                       Gc.ml.dat[ARROW],
                                       Gc.Coordinate(0, 0), title_font,
                                       sc_font, title_offset, cursor_offset,
                                       Gc.Coordinate(400, 375), 75, align="right", name="jms")
 
+        # Le menu où on host une game
         host_multi = Gc.MenuUI("Host new game", ("Your name:", "Players count:", "Go", "Back"), Gc.ml.dat[ARROW],
                                Gc.Coordinate(0, 0), title_font,
                                sc_font, title_offset, cursor_offset,
                                Gc.Coordinate(400, 460), 75, align="right", name="host")
 
+        # Les textbox pour mettre l'addresse IP, le nom du joueur et le nombre de joueur, respectivement
         ip_textbox = Gc.TextBoxUI(Gc.Coordinate(400, 400), 200, sc_font,
                                   allowed_chars="0123456789.")
         name_textbox = Gc.TextBoxUI(Gc.Coordinate(400, 475), 200, sc_font)
-
         players_num_textbox = Gc.TextBoxUI(Gc.Coordinate(400, 550), 200, sc_font, allowed_chars="0123456789")
 
-        draw_ui = main_menu
+        draw_ui = main_menu  # Le UI où on va dessiner sur l'écran
 
         while True:
             for event in pygame.event.get():
@@ -127,6 +76,7 @@ def run():
 
                 # Menu behaviours
                 if event.type == pygame.KEYDOWN:
+                    """Quand le joueur appuie sur un bouton."""
                     if draw_ui.name == "main":  # MAIN MENU
                         if event.key == K_DOWN or event.key == K_s:
                             draw_ui.move_cursor(1)
@@ -216,7 +166,7 @@ def run():
                                 additional_ui[selected].add_char(event.key)
                             except IndexError:
                                 pass
-
+            # ++++ UPDATE 
             screen.fill(BG_COLOR)
             draw_ui.blit(screen)
             for ui in additional_ui:
@@ -225,27 +175,26 @@ def run():
 
     # SINGLE PLAYER GAME LOOP
     def game():
-        """Fonction appelé pour démarrer le mode multiplayer.
-        """
+        """Fonction appelé pour démarrer le mode singleplayer."""
 
         # >>>>>> Initialize >>>>>>>
         running = True
-        player = Gc.Player((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), Gc.ml.dat[PLAYER])
+        player = Gc.Player((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), Gc.ml.dat[PLAYER])  # Instance du player
         score = 0
 
-        asteroids = Gc.AstGroup()
-        small_asteroids = Gc.objects.AstGroup()
+        asteroids = Gc.AstGroup()  # Variable qui va contnenir les (grands) asteroids
+        small_asteroids = Gc.objects.AstGroup()  # Variable qui va contenir les (petits) asteroids
 
-        bullets = Gc.BulletGroup()
-        t_bullets = 0
+        bullets = Gc.BulletGroup()  # Variable qui va contenir les balles
+        t_bullets = 0  # Timer pour le cooldown de tir
 
-        game_over_window = None
-        lock_space = False
+        game_over_window = None 
+        lock_space = False  # Un bool pour bloquer la touch espace afin de ne pas aller directement au main menu apres que le player meurt
 
-        particles = Gc.ParticlesGroup()
-        gui_sh = generate_score_UI(score)
+        particles = Gc.ParticlesGroup()  # Variable qui va contenir les particules qui apparaissent lors un asteroid se casse
+        gui_sh = Gc.objects.generate_score_UI(score)
 
-        tick = 0
+        tick = 0  # Nombre de ticks(frame) écoulés après le start du jeu
         # <<<<<<<<<
 
         # >>>>>> Main loop >>>>>>
@@ -255,7 +204,7 @@ def run():
                 if event.type == pygame.QUIT:
                     sys.exit()
             pressed = pygame.key.get_pressed()
-            turn, accel = get_turn_and_accel_state(pressed)
+            turn, accel = Gc.objects.get_turn_and_accel_state(pressed)
             # +++++++
 
             screen.fill(BG_COLOR)  # Background
@@ -290,7 +239,7 @@ def run():
                     player.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), 0)
 
                 if gui_sh.length() == 1:  # Game over
-                    game_over_window = generate_gameover_window(score)
+                    game_over_window = Gc.objects.generate_gameover_window(score)
                     lock_space = True
 
             if game_over_window is None:
@@ -331,6 +280,7 @@ def run():
             # ++++++
         # <<<<<<<<<<
 
+    # MAIN LOOP
     while True:
         menu()
         game()

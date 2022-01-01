@@ -3,9 +3,7 @@ IMAGE = "image"
 SOUND = "sound"
 
 
-
 class Loader:
-
     def __init__(self):
         self.dat = {}
         self.load()

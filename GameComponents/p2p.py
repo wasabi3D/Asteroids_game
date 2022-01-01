@@ -10,7 +10,7 @@ def get_local_ip():
     return ip
 
 
-class GameCom:
+class Packet:
     def __init__(self, type_: str, message: str, value, other):
         self.info_type = type_
         self.msg = message
