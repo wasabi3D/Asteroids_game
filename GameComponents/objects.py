@@ -150,6 +150,7 @@ class Player(pygame.sprite.Sprite):
         if acc is False: # si on veut fraîner
             self.acc_spd = 0
 
+
         # modifie le vecteur vitesse
         cur_spd = self.speed_vector.length_squared()
         if cur_spd > 0.1:
@@ -462,4 +463,4 @@ def get_turn_and_accel_state(pressed: Sequence[bool]) -> tuple[bool, bool]:
     angle_counter_clwise = pressed[K_LEFT] or pressed[K_a]
     t_ = None if not angle_clwise ^ angle_counter_clwise else angle_clwise
     a_ = pressed[K_w] or pressed[K_UP]
-    return t_, a_
+    return t_, a_ == 1
