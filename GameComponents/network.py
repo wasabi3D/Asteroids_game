@@ -21,11 +21,6 @@ class Packet:
         return self.__dict__
 
 
-class PackedUpdateData:
-    def __init__(self):
-        self.dat = {}
-
-
 class Receive(threading.Thread):
     def __init__(self, port: int, on_receive_func, m_size=4096):
         super(Receive, self).__init__()

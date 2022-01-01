@@ -11,14 +11,35 @@ import time
 import threading
 
 
+def generate_score_UI(score: int) -> Gc.UIGroup:
+    sc_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), SCORE_SIZE)
+    gui_sh = Gc.UIGroup(Gc.Coordinate(10, 10, clamp_coordinate=False))
+    gui_sh.add_UI_object(Gc.TextUI(sc_font, (217, 211, 211), str(score)),
+                         Gc.Coordinate(0, 0, clamp_coordinate=False), 0)
+    for x in range(HP):
+        gui_sh.add_UI_object(Gc.ImageUI(Gc.ml.dat[HEART], Gc.Coordinate(0, 0)),
+                             Gc.Coordinate(-10 + x * Gc.ml.dat[HEART].get_width() + 10, SCORE_SIZE + 10,
+                                           clamp_coordinate=False), x + 1)
+    return gui_sh
+
+
 def generate_dead_UI():
-    """Permet de générer les UI qui va signaler le joueur que il est mort."""
     font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 27)
     gui = Gc.UIGroup(Gc.Coordinate(200, 20, clamp_coordinate=False))
     gui.add_UI_object(Gc.TextUI(font, DEFAULT_TEXT_COL, "You died! Spectating the game."),
                                 Gc.Coordinate(0, 0, clamp_coordinate=False), 0)
     return gui
 
+
+def generate_gameover_window(score: int) -> Gc.MenuUI:
+    font_path = os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT)
+    score_text = Gc.UI.TextUI(pygame.font.Font(font_path, 13), DEFAULT_TEXT_COL, f"Score: {score}", Gc.Coordinate(0, 0))
+    menu = Gc.MenuUI("Game Over", ("Return to the menu", "Quit game"), Gc.ml.dat[ARROW],
+                     Gc.objects.Coordinate(SCREEN_DIMENSION[0] / 2 - 110, SCREEN_DIMENSION[1] / 2 - 100),
+                     pygame.font.Font(font_path, 25), pygame.font.Font(font_path, 15), Gc.Coordinate(50, 20),
+                     Gc.Coordinate(-30, -5), Gc.Coordinate(45, 80), 30, align="left")
+    menu.add_UI_object(score_text, Gc.objects.Coordinate(50, 50), 1)
+    return menu
 
 
 class Client:
@@ -51,7 +72,7 @@ class Client:
         self.spawned = False
         self.me: Gc.MpPlayer = None
         self.score = 0
-        self.score_gui = Gc.generate_score_UI(self.score)
+        self.score_gui = generate_score_UI(self.score)
         self.dead_ui = generate_dead_UI()
         self.game_over_ui: Gc.MenuUI = None
 
@@ -179,7 +200,7 @@ class Client:
         self.detect_timeout = False
         lock_space = True
         # >>>>>> GAME OVER >>>>>>
-        self.game_over_ui = Gc.generate_gameover_window(self.score)
+        self.game_over_ui = generate_gameover_window(self.score)
         while True:
             # +++INPUT EVENTS+++
             for event in pygame.event.get():
@@ -396,7 +417,7 @@ class Host:
         self.score = 0
         self.my_ip = Gc.get_local_ip()
         self.dead = False
-        self.score_gui = Gc.generate_score_UI(self.score)
+        self.score_gui = generate_score_UI(self.score)
         self.dead_ui = generate_dead_UI()
         self.game_over_ui: Gc.MenuUI = None
 
@@ -577,7 +598,7 @@ class Host:
 
         lock_space = True
         # >>>>>> GAME OVER >>>>>>
-        self.game_over_ui = Gc.generate_gameover_window(self.score)
+        self.game_over_ui = generate_gameover_window(self.score)
         while True:
             # +++INPUT EVENTS+++
             for event in pygame.event.get():
