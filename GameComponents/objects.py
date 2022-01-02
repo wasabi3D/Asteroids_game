@@ -1,5 +1,7 @@
 import os
 import random
+import threading
+
 import pygame
 from pygame import Surface, sprite
 from pygame.math import Vector2
@@ -443,6 +445,17 @@ class AstGroup(sprite.Group):
                     other.remove(bu)
                     ml.dat[S_DESTROY].play()
         return destroyed_list_cords
+
+
+class BGMPlayer:
+    def __init__(self):
+        self.music: pygame.mixer.Sound = ml.dat[S_BGM]
+
+    def play(self):
+        self.music.play(loops=-1, fade_ms=200)
+
+    def stop(self):
+        self.music.fadeout(1500)
 
 
 def distance_square(p1: Coordinate, p2: Coordinate) -> int:

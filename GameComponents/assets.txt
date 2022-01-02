@@ -22,3 +22,4 @@ line:line.png
 shoot:shoot.wav
 be_shot:be_shot.wav
 destroy_ast:destroy_asteroid.wav
+bgm:bgm.wav
