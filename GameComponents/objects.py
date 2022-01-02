@@ -419,23 +419,32 @@ class Asteroid(pygame.sprite.Sprite):
         screen.blit(self.image, self.rect)
 
 
+# Classe contenant des objets de classe Bullet
 class BulletGroup(sprite.Group):
     def __init__(self, *sprites) -> None:
+        """:param sprites: Bullets qu'on veut mettre dans la classe"""
         super().__init__(*sprites)
 
     def update(self) -> None:
+        """vérifie si tous les Bullets sont encore sur l'écran et sinon, ils sont effacés"""
         for sp in self.sprites():
             if sp.update():
                 self.remove(sp)
 
 
+# Classe contenant des objets de classe Asteroid
 class AstGroup(sprite.Group):
 
     def __init__(self, *sprites) -> None:
+        """:param sprites: Asteroids qu'on veut mettre dans la classe"""
         super().__init__(*sprites)
 
     def is_colliding_player(self, pl: Player) -> bool:
-        sp: Asteroid
+        """Vérifie si un asteroide touche le joueur
+        :param pl: classe Player, est le joue en question
+        :return: True si ily à une collision et False autrement
+        """
+        sp: Asteroid # on dit ici que sp contiendra une classe Asteroid
         for sp in self.sprites():
             if is_colliding(sp.pCollider, pl.pCollider):
                 self.remove(sp)
@@ -444,6 +453,12 @@ class AstGroup(sprite.Group):
 
     def is_colliding_destroy_bullet(self, other: BulletGroup, particlesList: ParticlesGroup,
                                     render_particles=True) -> list[Coordinate]:
+        """Vérifie si des astéroïdes sont en contacte aves balles
+        :param other: Groupe de Bullets dans le jeu
+        :param particleList: groupe de tous les groupes de particules
+        :param render_particles: si on veut avoir des particules ou pas
+        :return: une liste des coordonées des astéroides détruits
+        """
         destroyed_list_cords = []
         bu: Bullet
         for bu in other.sprites():
@@ -457,28 +472,31 @@ class AstGroup(sprite.Group):
                                                                                        PARTICLE_MAX), sp.cords))
                     self.remove(sp)
                     other.remove(bu)
-                    ml.dat[S_DESTROY].play()
+                    ml.dat[S_DESTROY].play()  # son de destruction
         return destroyed_list_cords
 
 
+# son en arripèreplan
 class BGMPlayer:
     def __init__(self):
         self.music: pygame.mixer.Sound = ml.dat[S_BGM]
 
     def play(self):
+        """commencer à jouer la musique"""
         self.music.play(loops=-1, fade_ms=200)
 
     def stop(self):
+        """arrèter la musique"""
         self.music.fadeout(1500)
 
 
 def distance_square(p1: Coordinate, p2: Coordinate) -> int:
-    """Fonction qui retourne la distance des 2 coordonées au carré.
-    """
+    """Fonction qui retourne la distance des 2 coordonées au carré."""
     return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2
 
 
 def is_colliding(col1: Collider, col2: Collider) -> bool:
+    """:return: True si les duex Collider sont en collision sinon False"""
     return distance_square(col1.pos, col2.pos) <= (col1.r + col2.r) ** 2
 
 
