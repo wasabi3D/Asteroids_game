@@ -51,3 +51,17 @@ class Loader:
                 size = size.split('x')
                 self.dat[tag] = pygame.transform.scale(self.dat[tag], (int(size[0]), int(size[1])))
 
+        with open(os.path.join(d, "sound_volume.txt"), "r") as f:
+            lines = f.readlines()
+            for s in lines:
+                s = s[:-1] if s[-1] == '\n' else s
+                if s == "":
+                    continue
+                tag, vol = s.split(":")
+                try:
+                    vol = float(vol)
+                except ValueError:
+                    print(f"Could not convert volume value for tag {tag}, vol = {vol}")
+                    continue
+                self.dat[tag].set_volume(vol)
+

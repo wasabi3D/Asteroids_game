@@ -1,0 +1,3 @@
+shoot:0.3
+be_shot:0.2
+destroy_ast:1

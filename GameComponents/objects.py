@@ -203,6 +203,9 @@ class Player(pygame.sprite.Sprite):
         self.acc_ang = 0
         self.rect = self.image.get_rect(center=self.cords.t)
 
+    def play_death_sound(self):
+        ml.dat[S_BE_SHOT].play()
+
 
 # Une classe pour les joueurs en ligne, simplement des vies et un nom ont été rajoutés
 class MpPlayer(Player):
@@ -313,6 +316,8 @@ class Bullet(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=xy)
         self.pCollider = Collider(self.cords, self.image.get_width())
         self.id = bul_id
+
+        ml.dat[S_SHOOT].play()
 
     def update(self) -> bool:
         """Met à jour les coordonées de la balle
@@ -436,6 +441,7 @@ class AstGroup(sprite.Group):
                                                                                        PARTICLE_MAX), sp.cords))
                     self.remove(sp)
                     other.remove(bu)
+                    ml.dat[S_DESTROY].play()
         return destroyed_list_cords
 
 

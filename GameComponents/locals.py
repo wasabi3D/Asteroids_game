@@ -71,4 +71,6 @@ TIMEOUT_CHECK_RATE = 2  # seconds
 
 DELIMITER = "/x/"
 
-
+S_SHOOT = "shoot"
+S_BE_SHOT = "be_shot"
+S_DESTROY = "destroy_ast"

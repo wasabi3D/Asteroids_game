@@ -275,10 +275,12 @@ def run():
                 if gui_sh.length() > 1:
                     gui_sh.remove(-1)
                     player.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), 0)
+                    player.play_death_sound()
 
                 if gui_sh.length() == 1:  # Game over
                     game_over_window = generate_gameover_window(score)
                     lock_space = True
+
 
             if game_over_window is None:
                 player.update(accel, turn)
