@@ -350,7 +350,12 @@ class Bullet(pygame.sprite.Sprite):
 # Classe contenant les informations d'un asteroïde
 class Asteroid(pygame.sprite.Sprite):
     def __init__(self, xy: tuple[int, int], angle: float = 0., small: bool = False, ast_id=0, img="") -> None:
-        """:param xy: """
+        """:param xy: coordonées d'apparition
+        :param angle: angle d'apparition
+        :param small: définit si l'aséroïde est grand (False) ou petit (True)
+        :param ast_id: id de l'astéroïde de l'astéroïde
+        :param img: quelle image sera ultilisée entre les différantes possibilités
+        """
         super().__init__()
         if img == "":
             self.img_index = random.randrange(0, len(ASTS))
@@ -375,16 +380,23 @@ class Asteroid(pygame.sprite.Sprite):
         self.small = small
 
     def update(self):
+        """Mettre à jour les positions de l'astéroïde"""
         self.move()
         self.angle %= 360
 
     def move(self, delta=1 / UPD):
+        """Modifie les coordonées et l'angle de l'astéroïde
+        :param delta: temps entre chaque déplacement
+        """
         self.cords.update(self.speed * self.vector.x * delta, self.speed * self.vector.y * delta, additive=True)
         self.rect = self.image.get_rect(center=self.cords.t)
         self.pCollider.update(self.cords)
         self.rotate(self.torque * delta)
 
     def rotate(self, angle):
+        """roter l'image
+        :param angle: angle en deg du quel va roter l'image. positif : sens horaire, négatif : sens antihoraire
+        """
         b4_rct = self.image.get_rect(center=self.rect.center)
         self.angle += angle
         rotated = pygame.transform.rotate(self.clone.copy(), -self.angle)
@@ -396,12 +408,14 @@ class Asteroid(pygame.sprite.Sprite):
         self.rotate(angle - self.angle)
 
     def set_pos(self, xy: tuple, angle: float):
+        """Téléporter l'astéroïde avel comme coordonées :param xy: et :param angle: degrés"""
         self.rotate_to(angle)
         self.cords.update(xy[0], xy[1])
         self.pCollider.update(self.cords)
         self.rect = self.image.get_rect(center=self.cords.t)
 
     def blit(self, screen):
+        """Afficher l'image sur :param screen:"""
         screen.blit(self.image, self.rect)
 
 
