@@ -9,8 +9,12 @@ import json
 import random
 import time
 import threading
-
-
+def get_turn_and_accel_state(pressed) -> tuple[bool, bool]:
+    angle_clwise = pressed[K_RIGHT] or pressed[K_d]
+    angle_counter_clwise = pressed[K_LEFT] or pressed[K_a]
+    t_ = None if not angle_clwise ^ angle_counter_clwise else angle_clwise
+    a_ = pressed[K_w] or pressed[K_UP]
+    return t_, a_
 def generate_score_UI(score: int) -> Gc.UIGroup:
     sc_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), SCORE_SIZE)
     gui_sh = Gc.UIGroup(Gc.Coordinate(10, 10, clamp_coordinate=False))
@@ -21,16 +25,12 @@ def generate_score_UI(score: int) -> Gc.UIGroup:
                              Gc.Coordinate(-10 + x * Gc.ml.dat[HEART].get_width() + 10, SCORE_SIZE + 10,
                                            clamp_coordinate=False), x + 1)
     return gui_sh
-
-
 def generate_dead_UI():
     font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 27)
     gui = Gc.UIGroup(Gc.Coordinate(200, 20, clamp_coordinate=False))
     gui.add_UI_object(Gc.TextUI(font, DEFAULT_TEXT_COL, "You died! Spectating the game."),
                                 Gc.Coordinate(0, 0, clamp_coordinate=False), 0)
     return gui
-
-
 def generate_gameover_window(score: int) -> Gc.MenuUI:
     font_path = os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT)
     score_text = Gc.UI.TextUI(pygame.font.Font(font_path, 13), DEFAULT_TEXT_COL, f"Score: {score}", Gc.Coordinate(0, 0))
@@ -40,14 +40,8 @@ def generate_gameover_window(score: int) -> Gc.MenuUI:
                      Gc.Coordinate(-30, -5), Gc.Coordinate(45, 80), 30, align="left")
     menu.add_UI_object(score_text, Gc.objects.Coordinate(50, 50), 1)
     return menu
-
-
 class Client:
-    """Classe qui définit les behaviours du client en mode multiplayer."""
-    def __init__(self, screen: pygame.Surface, host_ip: str, name: str):
-        """:param screen:  La fenêtre sur laquel les images sont affichées.
-        :param host_ip: L'addressse IP du host.
-        :param name: Le nom du joueur."""
+    def __init__(self, screen, host_ip, name):
         self.screen: pygame.Surface = screen
         self.host_ip = host_ip
         self.my_ip = Gc.get_local_ip()
@@ -75,15 +69,12 @@ class Client:
         self.score_gui = generate_score_UI(self.score)
         self.dead_ui = generate_dead_UI()
         self.game_over_ui: Gc.MenuUI = None
-
         self.receive.start()
         self.timeout_detector.start()
-
     # MAIN GAME LOOP
     def loop(self):
         # >>>>>> CONNECT TO HOST >>>>>>
         self._try_join()
-
         connecting_txt = Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connecting...", Gc.Coordinate(100, 650))
         connecting_txt.blit(self.screen)
         pygame.display.update()
@@ -94,9 +85,8 @@ class Client:
         self.screen.fill(BG_COLOR, connecting_txt.rect)
         if self.connection_state == COM_GAME_FULL:
             connecting_txt.set_text("Connection error: GAME FULL. ")
-            return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection error: Game full.", Gc.Coordinate(100, 650))
+            return COM_GAME_FULL
         # <<<<<<
-
         # >>>>> INITIALIZE >>>>>
         host_send = Gc.Send(self.host_ip, DEFAULT_PORT)
         self.me = Gc.MpPlayer((random.randint(0, 600), random.randint(0, 600)), Gc.ml.dat[PLAYER], self.name, HP)
@@ -104,7 +94,6 @@ class Client:
                               Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0],
                                             self.me.cords.y + NAMETAG_OFFSET[1]))
         # <<<<<<<<
-
         # >>>>>> WAIT FOR START >>>>>
         connecting_txt.set_text("Waiting for the start...")
         connecting_txt.blit(self.screen)
@@ -115,7 +104,6 @@ class Client:
                 return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection timed out(lobby).", Gc.Coordinate(100, 700))
         self.running = True
         # <<<<<<<<<
-
         # >>>>> MAIN LOOP >>>>>
         while self.running:
             # +++CHECK TIMEOUT+++
@@ -123,7 +111,6 @@ class Client:
                 self.stop_client()
                 return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection timed out(game).", Gc.Coordinate(100, 700))
             # ++++++
-
             # +++INPUT EVENTS+++
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -132,7 +119,6 @@ class Client:
             pressed = pygame.key.get_pressed()
             # ++++++
             self.screen.fill(BG_COLOR)
-
             # +++SHOOT+++
             if not self.dead:
                 if pressed[K_SPACE] and self.t_bullets <= 0:  # Generate bullets
@@ -142,14 +128,13 @@ class Client:
                     host_send.send_message(json.dumps(tmp_msg.d()))
                     self.t_bullets = round(UPD / 3)
             # ++++++
-
             # +++SEND CLIENT's POS DATA TO HOST+++
+            if not self.dead:
                 tmp_msg = Gc.Packet(COM_GAMEDATINFO, COM_PLAYER_POS,
                                      f"{self.me.cords.x}{DELIMITER}{self.me.cords.y}{DELIMITER}"
                                      f"{self.me.angle}{DELIMITER}{Gc.get_local_ip()}", self.name)
                 host_send.send_message(json.dumps(tmp_msg.d()))
             # ++++++
-
             # +++DRAW PLAYERS+++
             s: Gc.MpPlayer
             for ip, s in self.other_players.items():
@@ -157,12 +142,12 @@ class Client:
                 s.blit(self.screen)
                 self.nametags[ip].blit(self.screen)
             # ++++++
-
             # +++DRAW ASTEROIDS+++
             a: Gc.Asteroid
             for a in list(self.asteroids.values()).copy():
                 a.blit(self.screen)
             for a in list(self.small_asteroids.values()).copy():
+                print("yes")
                 a.blit(self.screen)
             # ++++++
 
@@ -171,19 +156,16 @@ class Client:
                 self.score_gui.remove(-1)
             self.score_gui.set_text(str(self.score), 0)
             # ++++++
-
             # +++DRAW BULLETS+++
             b: Gc.Bullet
             for b in self.bullets.values():
                 b.blit(self.screen)
             # ++++++
-
             # +++UPDATES+++
             if self.dead and len(self.other_players) < 1:
                 self.running = False
-
             if not self.dead:
-                turn, accel = Gc.get_turn_and_accel_state(pressed)
+                turn, accel = get_turn_and_accel_state(pressed)
                 self.me.update(accel, turn)
                 self.me.blit(self.screen)
                 mynametag.set_pos(Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[1]))
@@ -196,7 +178,6 @@ class Client:
             pygame.time.Clock().tick(UPD)
             # ++++++
         # <<<<<<<<
-
         self.detect_timeout = False
         lock_space = True
         # >>>>>> GAME OVER >>>>>>
@@ -210,10 +191,8 @@ class Client:
             pressed = pygame.key.get_pressed()
             # +++
             self.screen.fill(BG_COLOR)
-
             if pressed[K_DOWN] or pressed[K_s]:
                 self.game_over_ui.move_cursor(1)
-
             if pressed[K_UP] or pressed[K_w]:
                 self.game_over_ui.move_cursor(-1)
             if pressed[K_SPACE] and not lock_space:
@@ -224,25 +203,16 @@ class Client:
                 elif select_index == 1:
                     self.stop_client()
                     sys.exit()
-
             if not pressed[K_SPACE]:
                 lock_space = False
             self.game_over_ui.blit(self.screen)
             pygame.display.update()
         # <<<<<<<<<<<
-
     def _try_join(self):
-        """Demande au host si le client peut joindre le jeu. ***Ce n'est pas censé être appelé par autre chose 
-        que cette classe.***"""
         tmp_send = Gc.Send(self.host_ip, DEFAULT_PORT)
         tmp_msg = Gc.Packet(COM_PREP, COM_REQUEST_JOIN, self.name, "")
         tmp_send.send_message(json.dumps(tmp_msg.d()))
-
     def _on_response(self, msg, addr):
-        """Fonction qui traite les données envoyés par le host. ***Ce n'est pas censé être appelé par autre chose 
-        que cette classe.***
-        :param msg: Message envoyé par le host
-        :param addr: L'addresse du host."""
         self.last_host_response = time.time()
         received = Gc.Packet("", "", "", "")
         received.__dict__ = json.loads(msg)
@@ -261,7 +231,6 @@ class Client:
                     g_ = Gc.Packet("", "", "", "")
                     g_.__dict__ = d
                     info.append(g_)
-
                 for i in info:
                     tmp = i.value.split(DELIMITER)
                     x, y, angle, aid = int(float(tmp[0])), int(float(tmp[1])), int(float(tmp[2])), int(
@@ -286,7 +255,6 @@ class Client:
                             self.small_asteroids.setdefault(aid, a)
                         if aid in small_ast_remove_flag:
                             small_ast_remove_flag.remove(aid)
-
                 # Remove unnecessary objects
                 for aid in ast_remove_flag:
                     if aid in self.asteroids.keys():
@@ -294,7 +262,6 @@ class Client:
                 for aid in small_ast_remove_flag:
                     if aid in self.small_asteroids.keys():
                         self.small_asteroids.pop(aid)
-
             elif received.msg == COM_BULLET:
                 bullets_remove_flag: list[int] = list(self.bullets.keys())
                 info: list[Gc.Packet] = []
@@ -303,7 +270,6 @@ class Client:
                     g_ = Gc.Packet("", "", "", "")
                     g_.__dict__ = d
                     info.append(g_)
-
                 for i in info:
                     tmp = i.value.split(DELIMITER)
                     x, y, bid = int(float(tmp[0])), int(float(tmp[1])), int(float(tmp[2]))
@@ -314,12 +280,10 @@ class Client:
                         self.bullets.setdefault(bid, b)
                     if bid in bullets_remove_flag:
                         bullets_remove_flag.remove(bid)
-
                 # Remove unnecessary objects
                 for bid in bullets_remove_flag:
                     if bid in self.bullets.keys():
                         self.bullets.pop(bid)
-
             elif received.msg == COM_PLAYER_POS:
                 players_remove_flag: list[str] = list(self.other_players.keys())
                 players_remove_flag.append(self.my_ip)
@@ -329,13 +293,11 @@ class Client:
                     g_ = Gc.Packet("", "", "", "")
                     g_.__dict__ = d
                     info.append(g_)
-
                 for i in info:
                     sp = i.value.split(DELIMITER)
                     osp = i.other.split(DELIMITER)
                     x, y, a, ip = int(float(sp[0])), int(float(sp[1])), int(float(sp[2])), sp[3]
                     name, health, self.score = osp[0], int(float(osp[1])), int(float(osp[2]))
-
                     if ip in players_remove_flag:
                         players_remove_flag.remove(ip)
                     if ip == self.my_ip:
@@ -353,17 +315,15 @@ class Client:
                                                                Gc.Coordinate(p.cords.x + NAMETAG_OFFSET[0],
                                                                              p.cords.y + NAMETAG_OFFSET[1])))
                     self.other_players[ip].set_pos((x, y), a)
-
                 # Remove unnecessary objects
                 for ip_ in players_remove_flag:
                     if ip_ == self.my_ip and self.spawned:
                         self.dead = True
-                        self.me.health = 0
+                        print("Dead")
                     if ip_ in self.other_players.keys():
                         self.other_players.pop(ip_)
 
     def stop_client(self):
-        """Fonction qui permet de arrêter le client(les threads). """
         self.receive.kill()
         self.detect_timeout = False
         self.timeout_detector.join()
@@ -375,22 +335,15 @@ class Client:
             th.join()
 
     def _timeout_detection(self):
-        """Fonction qui permet de détecter si le client a reçu une réponse de host dans un temps donné.
-        si cela est plus grand que GameComponents.locals.TIMEOUT, le client s'arrête automatiquement."""
         while self.detect_timeout:
+            print(time.time() - self.last_host_response)
             # print(time.time() - self.last_host_response)
             if time.time() - self.last_host_response > TIMEOUT:
                 self.timed_out = True
                 break
             time.sleep(TIMEOUT_CHECK_RATE)
-
-
 class Host:
-    """Classe qui définit les behaviours du host."""
     def __init__(self, screen, num_players, name):
-        """:param screen: La fenêtre sur laquel les images sont affichées.
-        :param num_players: Le nombre de joueurs dans le jeu.
-        :param name: Le nom du (joueur) host."""
         self.screen: pygame.Surface = screen
         self.host_receive = Gc.Receive(DEFAULT_PORT, self._on_rec_from_client)
         self.num_players = num_players
@@ -420,10 +373,8 @@ class Host:
         self.score_gui = generate_score_UI(self.score)
         self.dead_ui = generate_dead_UI()
         self.game_over_ui: Gc.MenuUI = None
-
         self.players_name_lobby.append(name)
         self.host_receive.start()
-
     # MAIN LOOP
     def loop(self):
         # >>>>>>>> INITIALIZE WINDOW UIs>>>>>>>
@@ -432,7 +383,6 @@ class Host:
                                                                                              SCREEN_DIMENSION[1] / 2))
         ip_txt = Gc.TextUI(font, DEFAULT_TEXT_COL, f"Share this ip to your friends: {Gc.get_local_ip()}",
                            Gc.Coordinate(50, 50))
-
         players_txt = []
         pl_txt_cord = Gc.Coordinate(100, 110)
         for i in range(self.num_players):
@@ -440,7 +390,6 @@ class Host:
                                                                                                     pl_txt_cord.y)))
             pl_txt_cord.update(0, 20, additive=True)
         # <<<<<<<<<<<<<<<<<<<<<
-
         # >>>>>>> WAIT FOR PLAYERS >>>>>>>
         self.do_ping = True
         self.ping_th = threading.Thread(target=self._ping_connected_players)
@@ -450,13 +399,11 @@ class Host:
                 if event.type == pygame.QUIT:
                     self.kill_host()
                     sys.exit()
-
             self.screen.fill(BG_COLOR)
             for i, txt in enumerate(players_txt):  # update text
                 if i + 1 > len(self.players_name_lobby):
                     break
                 txt.set_text(f"Player {i + 1}: {self.players_name_lobby[i]}", pos=txt.pos)
-
             for txt in players_txt:
                 txt.blit(self.screen)
             wait_txt.blit(self.screen)
@@ -464,14 +411,12 @@ class Host:
             pygame.display.update()
         self.do_ping = False
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
         # >>>>>>>> SEND GAME START SIGNAL TO CLIENTS AND INITIALIZE OBJECTS >>>>>>>>
         self.running = True
         for ip in self.ips:
             tmp_send = Gc.Send(ip, DEFAULT_PORT)
             tmp_msg = Gc.Packet(COM_PREP, COM_GAME_START, "", "")
             tmp_send.send_message(json.dumps(tmp_msg.d()))
-
         self.me = Gc.MpPlayer((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), Gc.ml.dat[PLAYER], self.name, HP)
         mynametag = Gc.TextUI(self.font, DEFAULT_TEXT_COL, self.name,
                               Gc.Coordinate(self.me.cords.x + NAMETAG_OFFSET[0], self.me.cords.y + NAMETAG_OFFSET[0]))
@@ -483,7 +428,6 @@ class Host:
                                                    Gc.Coordinate(p.cords.x + NAMETAG_OFFSET[0],
                                                                  p.cords.y + NAMETAG_OFFSET[1])))
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
         # >>>>>>>>> GAME LOOP >>>>>>>>>>
         while self.running:
             # +++EVENTS+++
@@ -493,9 +437,8 @@ class Host:
                     sys.exit()
             self.screen.fill(BG_COLOR)
             pressed = pygame.key.get_pressed()
-            turn, accel = Gc.get_turn_and_accel_state(pressed)
+            turn, accel = get_turn_and_accel_state(pressed)
             # ++++++
-
             # +++SHOOT+++
             if not self.dead:
                 if pressed[K_SPACE] and self.t_bullets <= 0:  # Generate bullets
@@ -504,9 +447,8 @@ class Host:
                     self.bullets_count += 1
                     self.t_bullets = round(UPD / 3)
             # ++++++
-
             # +++ASTEROIDS GENERATION+++
-            if self.tick % (UPD * int(AST_FREQUECY / (len(self.players_sprites) + 1))) == 0:  # Generate asteroids
+            if self.tick % (UPD * AST_FREQUECY) == 0:  # Generate asteroids
                 if random.randint(0, 1) == 1:
                     x = random.randint(0, SCREEN_DIMENSION[0] - 1)
                     y = 0
@@ -516,7 +458,6 @@ class Host:
                 self.asteroids.add(Gc.Asteroid((x, y), random.randint(0, 359), ast_id=self.asteroids_count))
                 self.asteroids_count += 1
             # ++++++
-
             # +++DRAW PLAYERS+++
             for ip, p in self.players_sprites.items():
                 p.blit(self.screen)
@@ -524,7 +465,6 @@ class Host:
                                                         p.cords.y + NAMETAG_OFFSET[1]))
                 self.nametags[ip].blit(self.screen)
             # +++++++
-
             # +++DETECT COLLISIONS+++
             destroyed = self.asteroids.is_colliding_destroy_bullet(self.bullets, None, render_particles=False)
             self.score += len(destroyed) * POINTS_P_AST
@@ -536,7 +476,6 @@ class Host:
                         self.small_asteroids_count += 1
             self.score += round(len(self.small_asteroids.is_colliding_destroy_bullet(self.bullets, None, render_particles=False))
                                 * POINTS_P_AST / 2)
-
             pop_list: list[str] = []
             pl: Gc.MpPlayer
             for k, pl in self.players_sprites.items():
@@ -551,7 +490,6 @@ class Host:
                     pl.set_pos((int(SCREEN_DIMENSION[0] / 2), int(SCREEN_DIMENSION[1] / 2)), 0)
             for p in pop_list:
                 self.players_sprites.pop(p)
-
             if not self.dead:
                 if self.asteroids.is_colliding_player(self.me) or self.small_asteroids.is_colliding_player(self.me):
                     self.me.health -= 1
@@ -560,19 +498,16 @@ class Host:
                     else:
                         self.me.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), 0)
             # +++
-
             # +++GUI UPDATE+++
             if self.score_gui.length() - 1 > self.me.health:
                 self.score_gui.remove(-1)
             self.score_gui.set_text(str(self.score), 0)
             # ++++++
-
             # +++DRAW OBJECTS+++
             self.bullets.draw(self.screen)
             self.asteroids.draw(self.screen)
             self.small_asteroids.draw(self.screen)
             # ++++++
-
             # +++UPDATE+++
             if self.dead and len(self.players_sprites) < 1:
                 self.running = False
@@ -583,7 +518,6 @@ class Host:
                 mynametag.blit(self.screen)
             else:
                 self.dead_ui.blit(self.screen)
-
             threading.Thread(target=self._send_objects_data2client).start()
             self.tick += 1
             self.t_bullets -= 1
@@ -595,7 +529,6 @@ class Host:
             pygame.time.Clock().tick(UPD)
             # ++++++
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<
-
         lock_space = True
         # >>>>>> GAME OVER >>>>>>
         self.game_over_ui = generate_gameover_window(self.score)
@@ -608,10 +541,8 @@ class Host:
             pressed = pygame.key.get_pressed()
             # +++
             self.screen.fill(BG_COLOR)
-
             if pressed[K_DOWN] or pressed[K_s]:
                 self.game_over_ui.move_cursor(1)
-
             if pressed[K_UP] or pressed[K_w]:
                 self.game_over_ui.move_cursor(-1)
             if pressed[K_SPACE] and not lock_space:
@@ -622,13 +553,11 @@ class Host:
                 elif select_index == 1:
                     self.kill_host()
                     sys.exit()
-
             if not pressed[K_SPACE]:
                 lock_space = False
             self.game_over_ui.blit(self.screen)
             pygame.display.update()
         # <<<<<<<<<<<
-
     def _on_rec_from_client(self, msg_, addr):
         received = Gc.Packet("", "", "", "")
         received.__dict__ = json.loads(msg_)
@@ -656,15 +585,14 @@ class Host:
                 b = Gc.Bullet((x, y), pygame.Vector2(dx, dy) * BULLET_SPEED, bul_id=self.bullets_count)
                 self.bullets_count += 1
                 self.bullets.add(b)
-
     def _ping_connected_players(self):
         while self.do_ping:
             for ip in self.ips:
+                print(ip)
                 # print(ip)
                 tmp_send = Gc.Send(ip, DEFAULT_PORT)
                 tmp_send.send_message(json.dumps(Gc.Packet(COM_PREP, COM_PING, "", "").d()))
             time.sleep(4)
-
     def kill_host(self):
         self.do_ping = False
         self.ping_th.join()
@@ -674,11 +602,9 @@ class Host:
             if th is threading.currentThread():
                 continue
             th.join()
-
     def _send_objects_data2client(self):
         s: Gc.Send
         common_info: list[dict] = []
-
         # +++ASTEROIDS+++
         ast: Gc.Asteroid
         for ast in self.asteroids.sprites():
@@ -693,7 +619,6 @@ class Host:
             common_info.append(tmp_msg.d())
         ast_pk = Gc.Packet(COM_GAMEDATINFO, COM_ASTEROID, json.dumps(common_info), "")
         common_info.clear()
-
         # +++
         # +++BULLETS+++
         bul: Gc.Bullet
@@ -718,14 +643,11 @@ class Host:
             common_info.append(tmp_msg.d())
         pl_pk = Gc.Packet(COM_GAMEDATINFO, COM_PLAYER_POS, json.dumps(common_info), "")
         # +++
-
         for s_ in self.send_objects:
             s = s_.copy()
-
             s.set_message(json.dumps(ast_pk.d()))
             s.run()
             s.set_message(json.dumps(bul_pk.d()))
             s.run()
             s.set_message(json.dumps(pl_pk.d()))
             s.run()
-
