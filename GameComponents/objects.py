@@ -143,13 +143,13 @@ class Player(pygame.sprite.Sprite):
         self.rotate(self.turning_speed * delta) # rotate l'objet
 
         # s'occupe de la modification de l'acceleration
-        if acc is True: # si on veut accelerer
+        if acc: # si on veut accelerer
             self.acc_spd += ACC * delta
             self.acc_spd = clamp(0, ACC, self.acc_spd)
             tmp_vec = Vector2(0, -1)
             tmp_vec.rotate_ip(self.angle)
             self.speed_vector += tmp_vec * self.acc_spd * delta
-        if acc is False: # si on veut fraîner
+        else: # si on veut fraîner
             self.acc_spd = 0
 
 
