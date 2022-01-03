@@ -19,4 +19,7 @@ arrow:arrow.png
 heart:heart.png
 line:line.png
 +sound
-shoot:Laser_Shoot.wav
+shoot:shoot.wav
+be_shot:be_shot.wav
+destroy_ast:destroy_asteroid.wav
+bgm:bgm.wav

@@ -1,5 +1,7 @@
 import os
 import random
+import threading
+
 import pygame
 from pygame import Surface, sprite
 from pygame.math import Vector2
@@ -203,6 +205,9 @@ class Player(pygame.sprite.Sprite):
         self.acc_ang = 0
         self.rect = self.image.get_rect(center=self.cords.t)
 
+    def play_death_sound(self):
+        ml.dat[S_BE_SHOT].play()
+
 
 # Une classe pour les joueurs en ligne, simplement des vies et un nom ont été rajoutés
 class MpPlayer(Player):
@@ -314,6 +319,8 @@ class Bullet(pygame.sprite.Sprite):
         self.pCollider = Collider(self.cords, self.image.get_width())
         self.id = bul_id
 
+        ml.dat[S_SHOOT].play()
+
     def update(self) -> bool:
         """Met à jour les coordonées de la balle
         :return: True si la balle à dépassé les bordures de la fenêtre sinon False"""
@@ -343,7 +350,12 @@ class Bullet(pygame.sprite.Sprite):
 # Classe contenant les informations d'un asteroïde
 class Asteroid(pygame.sprite.Sprite):
     def __init__(self, xy: tuple[int, int], angle: float = 0., small: bool = False, ast_id=0, img="") -> None:
-        """:param xy: """
+        """:param xy: coordonées d'apparition
+        :param angle: angle d'apparition
+        :param small: définit si l'aséroïde est grand (False) ou petit (True)
+        :param ast_id: id de l'astéroïde de l'astéroïde
+        :param img: quelle image sera ultilisée entre les différantes possibilités
+        """
         super().__init__()
         if img == "":
             self.img_index = random.randrange(0, len(ASTS))
@@ -368,16 +380,23 @@ class Asteroid(pygame.sprite.Sprite):
         self.small = small
 
     def update(self):
+        """Mettre à jour les positions de l'astéroïde"""
         self.move()
         self.angle %= 360
 
     def move(self, delta=1 / UPD):
+        """Modifie les coordonées et l'angle de l'astéroïde
+        :param delta: temps entre chaque déplacement
+        """
         self.cords.update(self.speed * self.vector.x * delta, self.speed * self.vector.y * delta, additive=True)
         self.rect = self.image.get_rect(center=self.cords.t)
         self.pCollider.update(self.cords)
         self.rotate(self.torque * delta)
 
     def rotate(self, angle):
+        """roter l'image
+        :param angle: angle en deg du quel va roter l'image. positif : sens horaire, négatif : sens antihoraire
+        """
         b4_rct = self.image.get_rect(center=self.rect.center)
         self.angle += angle
         rotated = pygame.transform.rotate(self.clone.copy(), -self.angle)
@@ -389,32 +408,43 @@ class Asteroid(pygame.sprite.Sprite):
         self.rotate(angle - self.angle)
 
     def set_pos(self, xy: tuple, angle: float):
+        """Téléporter l'astéroïde avel comme coordonées :param xy: et :param angle: degrés"""
         self.rotate_to(angle)
         self.cords.update(xy[0], xy[1])
         self.pCollider.update(self.cords)
         self.rect = self.image.get_rect(center=self.cords.t)
 
     def blit(self, screen):
+        """Afficher l'image sur :param screen:"""
         screen.blit(self.image, self.rect)
 
 
+# Classe contenant des objets de classe Bullet
 class BulletGroup(sprite.Group):
     def __init__(self, *sprites) -> None:
+        """:param sprites: Bullets qu'on veut mettre dans la classe"""
         super().__init__(*sprites)
 
     def update(self) -> None:
+        """vérifie si tous les Bullets sont encore sur l'écran et sinon, ils sont effacés"""
         for sp in self.sprites():
             if sp.update():
                 self.remove(sp)
 
 
+# Classe contenant des objets de classe Asteroid
 class AstGroup(sprite.Group):
 
     def __init__(self, *sprites) -> None:
+        """:param sprites: Asteroids qu'on veut mettre dans la classe"""
         super().__init__(*sprites)
 
     def is_colliding_player(self, pl: Player) -> bool:
-        sp: Asteroid
+        """Vérifie si un asteroide touche le joueur
+        :param pl: classe Player, est le joue en question
+        :return: True si ily à une collision et False autrement
+        """
+        sp: Asteroid # on dit ici que sp contiendra une classe Asteroid
         for sp in self.sprites():
             if is_colliding(sp.pCollider, pl.pCollider):
                 self.remove(sp)
@@ -423,6 +453,12 @@ class AstGroup(sprite.Group):
 
     def is_colliding_destroy_bullet(self, other: BulletGroup, particlesList: ParticlesGroup,
                                     render_particles=True) -> list[Coordinate]:
+        """Vérifie si des astéroïdes sont en contacte aves balles
+        :param other: Groupe de Bullets dans le jeu
+        :param particleList: groupe de tous les groupes de particules
+        :param render_particles: si on veut avoir des particules ou pas
+        :return: une liste des coordonées des astéroides détruits
+        """
         destroyed_list_cords = []
         bu: Bullet
         for bu in other.sprites():
@@ -436,16 +472,31 @@ class AstGroup(sprite.Group):
                                                                                        PARTICLE_MAX), sp.cords))
                     self.remove(sp)
                     other.remove(bu)
+                    ml.dat[S_DESTROY].play()  # son de destruction
         return destroyed_list_cords
 
 
+# son en arripèreplan
+class BGMPlayer:
+    def __init__(self):
+        self.music: pygame.mixer.Sound = ml.dat[S_BGM]
+
+    def play(self):
+        """commencer à jouer la musique"""
+        self.music.play(loops=-1, fade_ms=200)
+
+    def stop(self):
+        """arrèter la musique"""
+        self.music.fadeout(1500)
+
+
 def distance_square(p1: Coordinate, p2: Coordinate) -> int:
-    """Fonction qui retourne la distance des 2 coordonées au carré.
-    """
+    """Fonction qui retourne la distance des 2 coordonées au carré."""
     return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2
 
 
 def is_colliding(col1: Collider, col2: Collider) -> bool:
+    """:return: True si les duex Collider sont en collision sinon False"""
     return distance_square(col1.pos, col2.pos) <= (col1.r + col2.r) ** 2
 
 
