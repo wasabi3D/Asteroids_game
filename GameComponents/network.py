@@ -11,6 +11,7 @@ def get_local_ip():
 
 
 class Packet:
+    """Class pour faciliter d'envoyer les données."""
     def __init__(self, type_: str, message: str, value, other):
         self.info_type = type_
         self.msg = message
@@ -22,7 +23,11 @@ class Packet:
 
 
 class Receive(threading.Thread):
+    """Class pour recevoir des messages."""
     def __init__(self, port: int, on_receive_func, m_size=4096):
+        """:param port: Le port où la class écoute pour les messages.
+        :param on_receive_func: Une fonction qui est executée lors de l'arrivée d'un message.
+        :param m_size: Taille maximale par message en byte."""
         super(Receive, self).__init__()
         self.received_raw = ""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -65,7 +70,11 @@ class Receive(threading.Thread):
 
 
 class Send:
+    """Class pour envoyer des messages."""
     def __init__(self, address: str, port: int, m_size=4096):
+        """:param address: Adresse IP de l'autre ordinateur.
+        :param port: Port où cette class envoie le message.
+        :param m_size: La taille maximale d'un message."""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.M_SiZE = m_size
         self.message = ""

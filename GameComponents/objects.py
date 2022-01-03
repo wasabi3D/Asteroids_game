@@ -10,6 +10,7 @@ from collections import Sequence
 
 import GameComponents.Medialoader as Medialoader
 from GameComponents.locals import *
+
 ml = Medialoader.Loader()
 
 
@@ -124,34 +125,34 @@ class Player(pygame.sprite.Sprite):
     def update(self, acc: bool, acc_ang: bool, delta: float = 1 / UPD) -> None:
         """fonction qu'on lance à chaque update permettant de calculer les nouvelles positions et direction de l'objet
         :param acc: bool qui est True si on veut accelerer et false si on arrète d'accelerer
-        :param acc_ang: bool que est True si on veut tourner dans le sens horaire, False pour antihoraire et est None si on ne veut pas tourner
+        :param acc_ang: bool que est True si on veut tourner dans le sens horaire, False pour antihoraire et est None si
+                        on ne veut pas tourner
         :param delta: float qui nous donne le temps qu'à mis le programme à executer une update
         """
 
         # Verifie que le vecteur de direction à bien une longueur de 1 et réctifie si ce n'est pas le cas
         if not self.vector.is_normalized:
             self.vector.normalize_ip()
-        
+
         # Cette zone s'occupe de la rotation de l'objet
-        if acc_ang is None: # si on ne veut pas tourner
+        if acc_ang is None:  # si on ne veut pas tourner
             self.turning_speed *= TURN_MULTIPLIER_PF
-        elif acc_ang: # si on veut tourner dans le sens des aiguilles d'une montre
+        elif acc_ang:  # si on veut tourner dans le sens des aiguilles d'une montre
             self.turning_speed += TURN_ACC * delta
-        elif not acc_ang: # si on veut tourner dans le sens contraire des aiguilles d'une montre
+        elif not acc_ang:  # si on veut tourner dans le sens contraire des aiguilles d'une montre
             self.turning_speed -= TURN_ACC * delta
         self.turning_speed = clamp(-MAX_TURN_SPEED, MAX_TURN_SPEED, self.turning_speed)
-        self.rotate(self.turning_speed * delta) # rotate l'objet
+        self.rotate(self.turning_speed * delta)  # rotate l'objet
 
         # s'occupe de la modification de l'acceleration
-        if acc: # si on veut accelerer
+        if acc:  # si on veut accelerer
             self.acc_spd += ACC * delta
             self.acc_spd = clamp(0, ACC, self.acc_spd)
             tmp_vec = Vector2(0, -1)
             tmp_vec.rotate_ip(self.angle)
             self.speed_vector += tmp_vec * self.acc_spd * delta
-        else: # si on veut fraîner
+        else:  # si on veut fraîner
             self.acc_spd = 0
-
 
         # modifie le vecteur vitesse
         cur_spd = self.speed_vector.length_squared()
@@ -300,7 +301,7 @@ class ParticlesGroup:
     def blit(self, screen):
         """Afficher toutes les particules"""
         for p in self.particles:
-            p.draw(screen) # fonction de pygame qui nous permet d'afficher tous les sprites
+            p.draw(screen)  # fonction de pygame qui nous permet d'afficher tous les sprites
 
 
 # classe qui contien les informations d'une balle
@@ -444,7 +445,7 @@ class AstGroup(sprite.Group):
         :param pl: classe Player, est le joue en question
         :return: True si ily à une collision et False autrement
         """
-        sp: Asteroid # on dit ici que sp contiendra une classe Asteroid
+        sp: Asteroid  # on dit ici que sp contiendra une classe Asteroid
         for sp in self.sprites():
             if is_colliding(sp.pCollider, pl.pCollider):
                 self.remove(sp)
