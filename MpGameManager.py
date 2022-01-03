@@ -329,7 +329,6 @@ class Client:
                 for ip_ in players_remove_flag:
                     if ip_ == self.my_ip and self.spawned:
                         self.dead = True
-                        print("Dead")
                     if ip_ in self.other_players.keys():
                         self.other_players.pop(ip_)
 
@@ -346,7 +345,6 @@ class Client:
 
     def _timeout_detection(self):
         while self.detect_timeout:
-            print(time.time() - self.last_host_response)
             # print(time.time() - self.last_host_response)
             if time.time() - self.last_host_response > TIMEOUT:
                 self.timed_out = True
