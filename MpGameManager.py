@@ -9,12 +9,16 @@ import json
 import random
 import time
 import threading
+
+
 def get_turn_and_accel_state(pressed) -> tuple[bool, bool]:
     angle_clwise = pressed[K_RIGHT] or pressed[K_d]
     angle_counter_clwise = pressed[K_LEFT] or pressed[K_a]
     t_ = None if not angle_clwise ^ angle_counter_clwise else angle_clwise
     a_ = pressed[K_w] or pressed[K_UP]
     return t_, a_
+
+
 def generate_score_UI(score: int) -> Gc.UIGroup:
     sc_font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), SCORE_SIZE)
     gui_sh = Gc.UIGroup(Gc.Coordinate(10, 10, clamp_coordinate=False))
@@ -25,12 +29,16 @@ def generate_score_UI(score: int) -> Gc.UIGroup:
                              Gc.Coordinate(-10 + x * Gc.ml.dat[HEART].get_width() + 10, SCORE_SIZE + 10,
                                            clamp_coordinate=False), x + 1)
     return gui_sh
+
+
 def generate_dead_UI():
     font = pygame.font.Font(os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT), 27)
     gui = Gc.UIGroup(Gc.Coordinate(200, 20, clamp_coordinate=False))
     gui.add_UI_object(Gc.TextUI(font, DEFAULT_TEXT_COL, "You died! Spectating the game."),
                                 Gc.Coordinate(0, 0, clamp_coordinate=False), 0)
     return gui
+
+
 def generate_gameover_window(score: int) -> Gc.MenuUI:
     font_path = os.path.join(os.path.dirname(__file__), TYPEWRITER_FONT)
     score_text = Gc.UI.TextUI(pygame.font.Font(font_path, 13), DEFAULT_TEXT_COL, f"Score: {score}", Gc.Coordinate(0, 0))
@@ -40,6 +48,8 @@ def generate_gameover_window(score: int) -> Gc.MenuUI:
                      Gc.Coordinate(-30, -5), Gc.Coordinate(45, 80), 30, align="left")
     menu.add_UI_object(score_text, Gc.objects.Coordinate(50, 50), 1)
     return menu
+
+
 class Client:
     def __init__(self, screen, host_ip, name):
         self.screen: pygame.Surface = screen
@@ -71,6 +81,7 @@ class Client:
         self.game_over_ui: Gc.MenuUI = None
         self.receive.start()
         self.timeout_detector.start()
+
     # MAIN GAME LOOP
     def loop(self):
         # >>>>>> CONNECT TO HOST >>>>>>
@@ -342,6 +353,8 @@ class Client:
                 self.timed_out = True
                 break
             time.sleep(TIMEOUT_CHECK_RATE)
+
+
 class Host:
     def __init__(self, screen, num_players, name):
         self.screen: pygame.Surface = screen
@@ -375,6 +388,7 @@ class Host:
         self.game_over_ui: Gc.MenuUI = None
         self.players_name_lobby.append(name)
         self.host_receive.start()
+
     # MAIN LOOP
     def loop(self):
         # >>>>>>>> INITIALIZE WINDOW UIs>>>>>>>
@@ -558,6 +572,7 @@ class Host:
             self.game_over_ui.blit(self.screen)
             pygame.display.update()
         # <<<<<<<<<<<
+
     def _on_rec_from_client(self, msg_, addr):
         received = Gc.Packet("", "", "", "")
         received.__dict__ = json.loads(msg_)
@@ -585,6 +600,7 @@ class Host:
                 b = Gc.Bullet((x, y), pygame.Vector2(dx, dy) * BULLET_SPEED, bul_id=self.bullets_count)
                 self.bullets_count += 1
                 self.bullets.add(b)
+
     def _ping_connected_players(self):
         while self.do_ping:
             for ip in self.ips:
@@ -593,6 +609,7 @@ class Host:
                 tmp_send = Gc.Send(ip, DEFAULT_PORT)
                 tmp_send.send_message(json.dumps(Gc.Packet(COM_PREP, COM_PING, "", "").d()))
             time.sleep(4)
+
     def kill_host(self):
         self.do_ping = False
         self.ping_th.join()
@@ -602,6 +619,7 @@ class Host:
             if th is threading.currentThread():
                 continue
             th.join()
+
     def _send_objects_data2client(self):
         s: Gc.Send
         common_info: list[dict] = []
@@ -651,3 +669,4 @@ class Host:
             s.run()
             s.set_message(json.dumps(pl_pk.d()))
             s.run()
+            
