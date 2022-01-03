@@ -158,7 +158,6 @@ class Client:
             for a in list(self.asteroids.values()).copy():
                 a.blit(self.screen)
             for a in list(self.small_asteroids.values()).copy():
-                print("yes")
                 a.blit(self.screen)
             # ++++++
 
