@@ -115,6 +115,8 @@ class Client:
                 return Gc.TextUI(self.font_b, DEFAULT_TEXT_COL, "Connection timed out(lobby).", Gc.Coordinate(100, 700))
         self.running = True
         # <<<<<<<<<
+        bgm_player = Gc.BGMPlayer()
+        bgm_player.play()
         # >>>>> MAIN LOOP >>>>>
         while self.running:
             # +++CHECK TIMEOUT+++
@@ -191,6 +193,7 @@ class Client:
         self.detect_timeout = False
         lock_space = True
         # >>>>>> GAME OVER >>>>>>
+        bgm_player.stop()
         self.game_over_ui = generate_gameover_window(self.score)
         while True:
             # +++INPUT EVENTS+++
@@ -218,10 +221,12 @@ class Client:
             self.game_over_ui.blit(self.screen)
             pygame.display.update()
         # <<<<<<<<<<<
+        
     def _try_join(self):
         tmp_send = Gc.Send(self.host_ip, DEFAULT_PORT)
         tmp_msg = Gc.Packet(COM_PREP, COM_REQUEST_JOIN, self.name, "")
         tmp_send.send_message(json.dumps(tmp_msg.d()))
+        
     def _on_response(self, msg, addr):
         self.last_host_response = time.time()
         received = Gc.Packet("", "", "", "")
@@ -314,6 +319,7 @@ class Client:
                         self.spawned = True
                         self.dead = False
                         if self.me is not None:
+                            if self.me.health > health: self.me.play_death_sound()
                             self.me.health = health
                             if x == int(SCREEN_DIMENSION[0] / 2) and y == int(SCREEN_DIMENSION[1] / 2):
                                 self.me.set_pos((SCREEN_DIMENSION[0] / 2, SCREEN_DIMENSION[1] / 2), self.me.angle)
@@ -439,6 +445,8 @@ class Host:
                                                    Gc.Coordinate(p.cords.x + NAMETAG_OFFSET[0],
                                                                  p.cords.y + NAMETAG_OFFSET[1])))
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        bgm_player = Gc.BGMPlayer()
+        bgm_player.play()
         # >>>>>>>>> GAME LOOP >>>>>>>>>>
         while self.running:
             # +++EVENTS+++
@@ -504,6 +512,7 @@ class Host:
             if not self.dead:
                 if self.asteroids.is_colliding_player(self.me) or self.small_asteroids.is_colliding_player(self.me):
                     self.me.health -= 1
+                    self.me.play_death_sound()
                     if self.me.health <= 0:
                         self.dead = True
                     else:
@@ -542,6 +551,7 @@ class Host:
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<
         lock_space = True
         # >>>>>> GAME OVER >>>>>>
+        bgm_player.stop()
         self.game_over_ui = generate_gameover_window(self.score)
         while True:
             # +++INPUT EVENTS+++
