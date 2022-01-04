@@ -551,7 +551,7 @@ class Host:
             # ++++++
 
             # +++ASTEROIDS GENERATION+++
-            if self.tick % (UPD * AST_FREQUECY) == 0:  # Generate asteroids
+            if self.tick % (UPD * AST_FREQUECY / self.num_players) == 0:  # Generate asteroids
                 if random.randint(0, 1) == 1:
                     x = random.randint(0, SCREEN_DIMENSION[0] - 1)
                     y = 0
